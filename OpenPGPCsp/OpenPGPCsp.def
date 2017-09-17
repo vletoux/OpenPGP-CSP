@@ -1,0 +1,32 @@
+
+EXPORTS
+DllRegisterServer PRIVATE
+DllUnregisterServer PRIVATE
+
+CPAcquireContext
+CPReleaseContext
+CPGetProvParam
+CPSetProvParam
+
+CPGenRandom
+
+CPCreateHash
+CPHashData
+CPHashSessionKey
+CPSignHash
+CPDestroyHash
+CPSetHashParam
+CPGetHashParam
+
+CPGenKey
+CPDeriveKey
+CPDestroyKey
+CPSetKeyParam
+CPGetKeyParam
+CPExportKey
+CPImportKey
+CPEncrypt
+CPDecrypt
+CPVerifySignature
+CPGetUserKey
+
