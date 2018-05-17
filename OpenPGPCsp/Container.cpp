@@ -49,7 +49,7 @@ Container::Container()
 	m_dwKeySpec = 0;
 	m_szPinPROMPT = NULL;
 	m_szUIPROMPT = NULL;
-	BOOL fReturn = CryptAcquireContext(&m_hProv, NULL,MS_STRONG_PROV, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT | CRYPT_SILENT);
+	BOOL fReturn = CryptAcquireContext(&m_hProv, NULL, MS_ENH_RSA_AES_PROV, PROV_RSA_AES, CRYPT_VERIFYCONTEXT | CRYPT_SILENT);
 	if (!fReturn)
 	{
 		DWORD dwError = GetLastError();

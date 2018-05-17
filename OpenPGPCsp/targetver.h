@@ -18,8 +18,8 @@
 
 #include <winsdkver.h>
 
-#define _WIN32_WINNT 0x0501
-#define WINVER 0x0501
-#define NTDDI_VERSION NTDDI_WINXP
+#define _WIN32_WINNT _WIN32_WINNT_VISTA
+#define WINVER _WIN32_WINNT_VISTA
+#define NTDDI_VERSION NTDDI_VISTA
 
 #include <SDKDDKVer.h>

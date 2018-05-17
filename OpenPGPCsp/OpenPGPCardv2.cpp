@@ -86,13 +86,16 @@ OPENPGP_SUPPORTED_SIGNATURE_ALGORITHM SignatureAlgorithm[] =
 	{CALG_SHA1,20, 
 			dwSHA1EncodedOid,
 			ARRAYSIZE(dwSHA1EncodedOid), BCRYPT_SHA1_ALGORITHM},
-	{CALG_SHA-256,32,
+	//SHA256
+	{CALG_SHA_256,32,
 			dwSHA256EncodedOid,
 			ARRAYSIZE(dwSHA256EncodedOid), BCRYPT_SHA256_ALGORITHM},
-	{CALG_SHA-384,48,
+	//SHA384
+	{CALG_SHA_384,48,
 			dwSHA384EncodedOid,
 			ARRAYSIZE(dwSHA384EncodedOid), BCRYPT_SHA384_ALGORITHM},
-	{CALG_SHA-512,64,
+	//SHA512
+	{CALG_SHA_512,64,
 			dwSHA512EncodedOid,
 			ARRAYSIZE(dwSHA512EncodedOid), BCRYPT_SHA512_ALGORITHM},
 };
@@ -810,13 +813,13 @@ BOOL OpenPGPCardv2::SignHash(__in DWORD dwKeyId, __in     HCRYPTHASH  hHash, __i
 		case CALG_SHA1:
 			dwAlgIndex = 0;
 			break;
-		case CALG_SHA-256:
+		case CALG_SHA_256:
 			dwAlgIndex = 1;
 			break;
-		case CALG_SHA-384:
+		case CALG_SHA_384:
 			dwAlgIndex = 2;
 			break;
-		case CALG_SHA-512:
+		case CALG_SHA_512:
 			dwAlgIndex = 3;
 			break;
 		default:
