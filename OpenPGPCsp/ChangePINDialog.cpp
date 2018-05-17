@@ -102,6 +102,7 @@ VOID ChangePINDialog::InitDialog()
 	CenterWindow();
 	// focus to PIN
 	SendMessage(_hwnd, WM_NEXTDLGCTL, (WPARAM)GetDlgItem(this->_hwnd,IDC_VERIFY), TRUE);
+	SetWindowPos(_hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 }
 
 
