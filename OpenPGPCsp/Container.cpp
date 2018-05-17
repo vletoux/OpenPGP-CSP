@@ -1961,7 +1961,9 @@ BOOL Container::SetKeyParam(
 			}
 			else
 			{
-				dwError = NTE_BAD_FLAGS;
+				// ignore setting permission on the card keys
+				dwError = ERROR_SUCCESS;
+				fReturn = TRUE;
 				Trace(TRACE_LEVEL_ERROR, L"KP_PERMISSIONS with dwKeySpec = %d", dwKeySpec);
 				__leave;
 			}
