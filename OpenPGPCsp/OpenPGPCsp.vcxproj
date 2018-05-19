@@ -208,10 +208,10 @@ IF "$(ConfigurationName)" NEQ "Release" "C:\Program Files (x86)\Windows Kits\8.0
 @echo sign binaries
 @echo ================
 
-IF "$(ConfigurationName)" == "Release" "C:\Program Files (x86)\Windows Kits\8.0\bin\x86\signtool.exe" sign  /d "OpenPGP CSP" /ac $(SolutionDir)\CodeSigning\addtrustexternalcaroot_kmod.crt /f $(SolutionDir)\CodeSigning\certificate.pfx /p vletoux /t http://timestamp.comodoca.com "$(TargetPath)"
-IF "$(ConfigurationName)" == "Release" "C:\Program Files (x86)\Windows Kits\8.0\bin\x86\signtool.exe" sign  /d "OpenPGP CSP" /ac $(SolutionDir)\CodeSigning\addtrustexternalcaroot_kmod.crt /f $(SolutionDir)\CodeSigning\certificate.pfx /p vletoux /fd sha256 /tr http://timestamp.comodoca.com/?td=sha256 /td sha256 /as "$(TargetPath)"
-IF "$(ConfigurationName)" NEQ "Release" "C:\Program Files (x86)\Windows Kits\8.0\bin\x86\signtool.exe" sign  /d "OpenPGP CSP" /ac $(SolutionDir)\CodeSigning\addtrustexternalcaroot_kmod.crt /f $(SolutionDir)\CodeSigning\certificate.pfx /p vletoux "$(TargetPath)"
-IF "$(ConfigurationName)" NEQ "Release" "C:\Program Files (x86)\Windows Kits\8.0\bin\x86\signtool.exe" sign  /d "OpenPGP CSP" /ac $(SolutionDir)\CodeSigning\addtrustexternalcaroot_kmod.crt /f $(SolutionDir)\CodeSigning\certificate.pfx /p vletoux /fd sha256  /as "$(TargetPath)"
+IF "$(ConfigurationName)" == "Release" "C:\Program Files (x86)\Windows Kits\8.0\bin\x86\signtool.exe" sign  /d "OpenPGP CSP" /ac $(SolutionDir)\CodeSigning\comodorsacertificationauthority_kmod.crt /f $(SolutionDir)\CodeSigning\certificate.pfx /p vletoux /t http://timestamp.comodoca.com "$(TargetPath)"
+IF "$(ConfigurationName)" == "Release" "C:\Program Files (x86)\Windows Kits\8.0\bin\x86\signtool.exe" sign  /d "OpenPGP CSP" /ac $(SolutionDir)\CodeSigning\comodorsacertificationauthority_kmod.crt /f $(SolutionDir)\CodeSigning\certificate.pfx /p vletoux /fd sha256 /tr http://timestamp.comodoca.com/?td=sha256 /td sha256 /as "$(TargetPath)"
+IF "$(ConfigurationName)" NEQ "Release" "C:\Program Files (x86)\Windows Kits\8.0\bin\x86\signtool.exe" sign  /d "OpenPGP CSP" /ac $(SolutionDir)\CodeSigning\comodorsacertificationauthority_kmod.crt /f $(SolutionDir)\CodeSigning\certificate.pfx /p vletoux "$(TargetPath)"
+IF "$(ConfigurationName)" NEQ "Release" "C:\Program Files (x86)\Windows Kits\8.0\bin\x86\signtool.exe" sign  /d "OpenPGP CSP" /ac $(SolutionDir)\CodeSigning\comodorsacertificationauthority_kmod.crt /f $(SolutionDir)\CodeSigning\certificate.pfx /p vletoux /fd sha256  /as "$(TargetPath)"
 
 @echo Done signing
 :exit

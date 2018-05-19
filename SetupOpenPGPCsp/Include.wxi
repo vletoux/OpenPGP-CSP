@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Include>
+  <?define ProductCode="9598DEAA-896F-4EC0-8062-75B67E21F885" ?>
+  <?define UpgradeCode="85E16C6D-5AD1-41E9-933F-995BF31B9223" ?>
+  <!-- Product name as you want it to appear in Add/Remove Programs-->
+  <?define ProductName = "NFC Connector client" ?>
+  <?define SourceDir = "$(var.SolutionDir)$(var.Platform)\$(var.Configuration)"?>
+</Include>

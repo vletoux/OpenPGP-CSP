@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <?include $(sys.SOURCEFILEDIR)include.wxi ?>
+  <Product Id="$(var.ProductCode)" Codepage="1252" Language="0"
+			 Manufacturer="My Smart Logon"
+			 Name="OpenPGP CSP"
+			 Version="!(bind.FileVersion.OpenPGPCSP32dll)"
+			 UpgradeCode="$(var.UpgradeCode)"
+       >
+    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" InstallPrivileges="elevated" Platform="$(var.Platform)" Description="$(var.ProductName)" />
+
+    <MajorUpgrade
+      DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit."/>
+
+    <Condition Message="An administrator must approve or install [ProductName].">
+      Privileged
+    </Condition>
+
+    <Condition Message="These application requires Windows XP SP3 or Windows 2003 SP2 or Windows Vista or Windows Server 2008 or later">
+      <![CDATA[Installed OR ((VersionNT >= 501) AND (ServicePackLevel >= 3)) OR ((VersionNT >= 502) AND (ServicePackLevel >= 2)) OR (VersionNT >= 600)]]>
+    </Condition>
+
+    <?if $(var.Platform) = x64 ?>
+    <Condition Message="This setup has been design for 64-bit versions of Windows.  Please run the setup on 64-bit Windows or get the 32 bits setup.">
+      VersionNT64
+    </Condition>
+    <?else?>
+    <Condition Message="This setup has been design for 32-bit versions of Windows.  Please run the setup on 32-bit Windows or get the 64 bits setup.">
+      Not VersionNT64
+    </Condition>
+    <?endif?>
+
+    <!-- do not edit the rtf file with word! The installer will be unable to read the license -->
+    <WixVariable Id="WixUILicenseRtf" Value="license.rtf" />
+    <WixVariable Id="WixUIBannerBmp" Value="bannrbmp.bmp"/>
+    <WixVariable Id="WixUIDialogBmp" Value="dlgbmp.bmp"/>
+
+    <!-- property for add/remove programs -->
+    <Property Id="ARPHELPLINK" Value="http://www.mysmartlogon.com" />
+    <Property Id="ARPCONTACT" Value="My Smart Logon" />
+    <Icon Id="mysmartlogon.ico" SourceFile="mysmartlogon.ico" />
+    <Property Id="ARPPRODUCTICON" Value="mysmartlogon.ico" />
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <?if $(var.Platform) = x64 ?>
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="APPLICATIONROOTDIRECTORY" Name="OpenPGPCSP"/>
+      </Directory>
+      <?else ?>
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="APPLICATIONROOTDIRECTORY" Name="OpenPGPCSP"/>
+      </Directory>
+      <?endif?>
+    </Directory>
+
+    <?if $(var.Platform) = x64 ?>
+    <Component Id="OpenPGPCSP64" Directory="APPLICATIONROOTDIRECTORY" Guid="4B6C0466-AFF7-4043-A605-C103060AE683" >
+      <File Id="OpenPGPCSP64dll" Name="OpenPGPCSP64.dll" Source="$(var.SourceDir)\OpenPGPCSP64.dll" KeyPath="yes" DiskId="1" />
+      <RegistryKey Root="HKLM" Key="SOFTWARE\Microsoft\Cryptography\Defaults\Provider\OpenPGP CSP">
+        <RegistryValue Type="string" Name="Image Path" Value="[#OpenPGPCSP64dll]"/>
+        <RegistryValue Type="integer" Name="Type" Value="1"/>
+        <RegistryValue Type="integer" Name="SigInFile" Value="0"/>
+      </RegistryKey>
+    </Component>
+    <?endif?>
+    <Component Id="OpenPGPCSP32" Directory="APPLICATIONROOTDIRECTORY" Guid="8DCB958E-E86F-43F5-A17F-A12C00A707C7">
+      <File Id="OpenPGPCSP32dll" Name="OpenPGPCSP32.dll" Source="$(var.SourceDir)\OpenPGPCSP32.dll" KeyPath="yes" DiskId="1" />
+      <?if $(var.Platform) = x64 ?>
+      <RegistryKey Root="HKLM" Key="SOFTWARE\Wow6432Node\Microsoft\Cryptography\Defaults\Provider\OpenPGP CSP">
+        <RegistryValue Type="string" Name="Image Path" Value="[#OpenPGPCSP32dll]"/>
+        <RegistryValue Type="integer" Name="Type" Value="1"/>
+        <RegistryValue Type="integer" Name="SigInFile" Value="0"/>
+      </RegistryKey>
+      <?else?>
+      <RegistryKey Root="HKLM" Key="SOFTWARE\Microsoft\Cryptography\Defaults\Provider\OpenPGP CSP">
+        <RegistryValue Type="string" Name="Image Path" Value="[#OpenPGPCSP32dll]"/>
+        <RegistryValue Type="integer" Name="Type" Value="1"/>
+        <RegistryValue Type="integer" Name="SigInFile" Value="0"/>
+      </RegistryKey>
+      <?endif?>
+    </Component>
+
+    <Component Id="OpenPGPSmartCardManager" Directory="APPLICATIONROOTDIRECTORY" Guid="8F9AF825-70CC-41D9-B7E4-7634F3BF06E3">
+      <File Id="OpenPGPSmartCardManagerexe" Name="OpenPGPSmartCardManager.exe" Source="$(var.SourceDir)\OpenPGPSmartCardManager.exe" KeyPath="yes" DiskId="1" />
+    </Component>
+
+    <Component Id="OpenPGPRegistration" Directory="APPLICATIONROOTDIRECTORY" Guid="EF46D050-D1A0-4BE1-AFCB-6D75041F5E13">
+      <RegistryKey Root="HKLM" Key="SOFTWARE\Microsoft\Cryptography\Calais\SmartCards\OpenPGP Card v2 (via OpenPGP CSP)">
+        <RegistryValue Type="binary" Name="ATR" Value="3BDA18FF81B1FE751F030031C573C001400090000C" KeyPath="yes"/>
+        <RegistryValue Type="binary" Name="ATRMask" Value="FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"/>
+        <RegistryValue Type="string" Name="Crypto Provider" Value="OpenPGP CSP"/>
+      </RegistryKey>
+      <?if $(var.Platform) = x64 ?>
+      <RegistryKey Root="HKLM" Key="SOFTWARE\Wow6432Node\Microsoft\Cryptography\Calais\SmartCards\OpenPGP Card v2 (via OpenPGP CSP)">
+        <RegistryValue Type="binary" Name="ATR" Value="3BDA18FF81B1FE751F030031C573C001400090000C"/>
+        <RegistryValue Type="binary" Name="ATRMask" Value="FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"/>
+        <RegistryValue Type="string" Name="Crypto Provider" Value="OpenPGP CSP"/>
+      </RegistryKey>
+      <?endif?>
+      <RegistryKey Root="HKLM" Key="SOFTWARE\Microsoft\Cryptography\Calais\SmartCards\OpenPGP Card v3 (via OpenPGP CSP)">
+        <RegistryValue Type="binary" Name="ATR" Value="3bda18ff81b1fe751f030031f573c001600090001c"/>
+        <RegistryValue Type="binary" Name="ATRMask" Value="FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"/>
+        <RegistryValue Type="string" Name="Crypto Provider" Value="OpenPGP CSP"/>
+      </RegistryKey>
+      <?if $(var.Platform) = x64 ?>
+      <RegistryKey Root="HKLM" Key="SOFTWARE\Wow6432Node\Microsoft\Cryptography\Calais\SmartCards\OpenPGP Card v3 (via OpenPGP CSP)">
+        <RegistryValue Type="binary" Name="ATR" Value="3bda18ff81b1fe751f030031f573c001600090001c"/>
+        <RegistryValue Type="binary" Name="ATRMask" Value="FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"/>
+        <RegistryValue Type="string" Name="Crypto Provider" Value="OpenPGP CSP"/>
+      </RegistryKey>
+      <?endif?>
+    </Component>
+
+    <Feature Id="DefaultFeature" Level="1" Description="This feature contains all the drivers and the programs"
+             Title="NFC minidriver" Absent="disallow" TypicalDefault="install" Display="expand">
+      <Feature Id="OpenPGPCSP" Level="1" Title="minidriver files"
+               Description="This feature is the core of the product"
+                TypicalDefault="install">
+        <ComponentRef Id="OpenPGPCSP32" />
+        <?if $(var.Platform) = x64 ?>
+        <ComponentRef Id="OpenPGPCSP64" />
+        <?endif?>
+      </Feature>
+      <Feature Id="OpenPGPSmartCardManager" Level="1" Title="OpenPGPSmartCardManager" TypicalDefault="install">
+        <ComponentRef Id="OpenPGPSmartCardManager"/>
+      </Feature>
+      <Feature Id="OpenPGPRegistration" Level="1" Title="OpenPGPRegistration" TypicalDefault="install">
+        <ComponentRef Id="OpenPGPRegistration"/>
+      </Feature>
+    </Feature>
+
+    <UI>
+      <UIRef Id="WixUI_Minimal" />
+    </UI>
+    <Media Id="1" Cabinet="OpenPGPCSP.cab" EmbedCab="yes" />
+  </Product>
+</Wix>

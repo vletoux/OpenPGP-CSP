@@ -18,7 +18,10 @@ The version used for the development is Visual Studio 2012
 A code signing certificate with the kernel mode option or using the prebuilt binaries.
 Indeed, at the opposite of a minidriver, a CSP MUST be signed.
 
-### Installing
+The current release is signed by a SHA2 certificate (kernel mode signing).
+That means that the [Microsoft Security Advisory 3033929](https://docs.microsoft.com/en-us/security-updates/securityadvisories/2015/3033929) MUST be installed.
+
+### Installing manually
 
 Copy the binaries to a known location. C:\windows\system32 is well known one.
 Edit the .reg file at the root of the project and add the ATR of the card to test.
