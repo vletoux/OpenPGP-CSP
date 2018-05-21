@@ -23,3 +23,8 @@
 #pragma comment(lib,"Scarddlg")
 #pragma comment(lib,"Rpcrt4")
 #pragma comment(lib,"AdvAPI32")
+#ifdef _WIN64
+#pragma comment(lib, "..\\lib\\bcrypt_x64")
+#else
+#pragma comment(lib, "..\\lib\\bcrypt_x86")
+#endif

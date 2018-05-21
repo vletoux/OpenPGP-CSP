@@ -28,10 +28,8 @@ PINDialog::~PINDialog()
 	SecureZeroMemory(_szPin, sizeof(_szPin));
 }
 
-INT_PTR PINDialog::Show()
+INT_PTR PINDialog::Show(HWND hWndParent)
 {
-    HWND hWndParent = NULL;
-	GetHWND(&hWndParent);
 	return DialogBoxParam(g_hInst, MAKEINTRESOURCE(_dwResourceId), hWndParent, _dialogProc, (LPARAM)this);
 }
 

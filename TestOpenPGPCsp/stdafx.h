@@ -28,3 +28,4 @@
 #include <CryptDlg.h>
 
 #define CSPNAME "OpenPGP CSP"
+#define KSPNAME "OpenPGP KSP"

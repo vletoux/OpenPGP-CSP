@@ -30,3 +30,4 @@ CPDecrypt
 CPVerifySignature
 CPGetUserKey
 
+GetKeyStorageInterface

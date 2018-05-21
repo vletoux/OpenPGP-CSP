@@ -44,7 +44,7 @@ BOOL WINAPI DllMain(
         break;
     case DLL_PROCESS_DETACH:
 		Trace(TRACE_LEVEL_VERBOSE, L"detaching ...%p", hinstDll);
-		Container::Clean();
+		CspContainer::Clean();
 		TracingUnRegister();
 		break;
     }

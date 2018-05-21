@@ -1,18 +1,18 @@
 /*	OpenPGP CSP
-    Copyright (C) 2017 Vincent Le Toux
+Copyright (C) 2017 Vincent Le Toux
 
-    This library is Free software; you can redistribute it and/or
-    modify it under the terms of the GNU Lesser General Public
-    License version 2.1 as published by the Free Software Foundation.
+This library is Free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License version 2.1 as published by the Free Software Foundation.
 
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Lesser General Public License for more details.
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
 
-    You should have received a copy of the GNU Lesser General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 #include "stdafx.h"
@@ -23,7 +23,7 @@
 OPENPGP_KEY_INFO OpenPGPKeys[] = 
 {
 	{0xB6, 0xCE, 0xC7, CALG_RSA_SIGN}, // signature
- 	{0xB8, 0xCF, 0xC8, CALG_RSA_KEYX}, // confidentiality
+	{0xB8, 0xCF, 0xC8, CALG_RSA_KEYX}, // confidentiality
 	{0xA4, 0xD0, 0xC9, CALG_RSA_SIGN}  // authentication
 };
 
@@ -72,32 +72,32 @@ typedef struct _OPENPGP_SUPPORTED_SIGNATURE_ALGORITHM
 } OPENPGP_SUPPORTED_SIGNATURE_ALGORITHM, *POPENPGP_SUPPORTED_SIGNATURE_ALGORITHM;
 
 BYTE dwSHA1EncodedOid[] = {0x30, 0x21, 0x30, 0x09, 0x06, 0x05, 0x2b, 0x0e, 0x03,
-			0x02, 0x1a, 0x05, 0x00, 0x04, 0x14};
+	0x02, 0x1a, 0x05, 0x00, 0x04, 0x14};
 BYTE dwSHA256EncodedOid[] = {0x30, 0x31, 0x30, 0x0D,0x06, 0x09, 0x60, 0x86, 0x48, 0x01,
-			0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04, 0x20};
+	0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04, 0x20};
 BYTE dwSHA384EncodedOid[] = {0x30, 0x41, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01,
-			0x65, 0x03, 0x04, 0x02, 0x02, 0x05, 0x00, 0x04, 0x30};
+	0x65, 0x03, 0x04, 0x02, 0x02, 0x05, 0x00, 0x04, 0x30};
 BYTE dwSHA512EncodedOid[] = {0x30, 0x41, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01,
-			0x65, 0x03, 0x04, 0x02, 0x03, 0x05, 0x00, 0x04, 0x40};
+	0x65, 0x03, 0x04, 0x02, 0x03, 0x05, 0x00, 0x04, 0x40};
 
 #define OPENPGP_NO_OID 0xFFFFFFFF
 OPENPGP_SUPPORTED_SIGNATURE_ALGORITHM SignatureAlgorithm[] = 
 {
 	{CALG_SHA1,20, 
-			dwSHA1EncodedOid,
-			ARRAYSIZE(dwSHA1EncodedOid), BCRYPT_SHA1_ALGORITHM},
+	dwSHA1EncodedOid,
+	ARRAYSIZE(dwSHA1EncodedOid), BCRYPT_SHA1_ALGORITHM},
 	//SHA256
 	{CALG_SHA_256,32,
-			dwSHA256EncodedOid,
-			ARRAYSIZE(dwSHA256EncodedOid), BCRYPT_SHA256_ALGORITHM},
+	dwSHA256EncodedOid,
+	ARRAYSIZE(dwSHA256EncodedOid), BCRYPT_SHA256_ALGORITHM},
 	//SHA384
 	{CALG_SHA_384,48,
-			dwSHA384EncodedOid,
-			ARRAYSIZE(dwSHA384EncodedOid), BCRYPT_SHA384_ALGORITHM},
+	dwSHA384EncodedOid,
+	ARRAYSIZE(dwSHA384EncodedOid), BCRYPT_SHA384_ALGORITHM},
 	//SHA512
 	{CALG_SHA_512,64,
-			dwSHA512EncodedOid,
-			ARRAYSIZE(dwSHA512EncodedOid), BCRYPT_SHA512_ALGORITHM},
+	dwSHA512EncodedOid,
+	ARRAYSIZE(dwSHA512EncodedOid), BCRYPT_SHA512_ALGORITHM},
 };
 
 DWORD dwSignatureAlgorithmCount = ARRAYSIZE(SignatureAlgorithm);
@@ -146,7 +146,7 @@ BOOL find_tlv(__in PBYTE pbData, __in  DWORD dwTlvSearched, __in DWORD dwTotalSi
 		}
 		dwTlv += pbData[dwOffset];
 		dwOffset++;
-		
+
 
 		if (dwTlv == dwTlvSearched)
 		{
@@ -176,14 +176,14 @@ BOOL find_tlv(__in PBYTE pbData, __in  DWORD dwTlvSearched, __in DWORD dwTotalSi
 DWORD OpenPGPCardv2::Reinit()
 {
 	BYTE pbCmd[] = {0x00, 
-				    0xA4,
-					0x04,
-					0x00,
-					0x06,
-					0xD2, 0x76, 0x00, 0x01, 0x24, 0x01,
-					0x00
-					};
-	
+		0xA4,
+		0x04,
+		0x00,
+		0x06,
+		0xD2, 0x76, 0x00, 0x01, 0x24, 0x01,
+		0x00
+	};
+
 	return SendCommand(pbCmd, sizeof(pbCmd));
 }
 
@@ -237,13 +237,13 @@ BOOL find_compacttlv(__in PBYTE pbData, __in DWORD dwTotalSize, __in BYTE bCode,
 			}
 			dwOffset++;
 			// size sequence
-			
+
 			*pbDataOut = pbData + dwOffset;
 			return TRUE;
 		}
 		else
 		{
-			
+
 			dwSize = (pbData[dwOffset] & 0x0F);
 			dwOffset += dwSize + 1;
 		}
@@ -259,10 +259,10 @@ DWORD OpenPGPCardv2::Create()
 	PBYTE					pbApplicationIdentifier = NULL;
 	PBYTE					pbFingerPrint = NULL;
 	DWORD					dwCapabilitiesSize=0, 
-							dwCardCapabilitiesSize=0,
-							dwApplicationIdentifierSize = 0,
-							dwExtendedCapabilitiesSize=0,
-							dwFingerPrintSize=0;
+		dwCardCapabilitiesSize=0,
+		dwApplicationIdentifierSize = 0,
+		dwExtendedCapabilitiesSize=0,
+		dwFingerPrintSize=0;
 	DWORD dwI, dwJ;
 	__try
 	{
@@ -338,11 +338,11 @@ DWORD OpenPGPCardv2::Create()
 }
 
 DWORD OpenPGPCardv2::CheckCapabilities(__in_bcount(dwCardCapabilitiesSize) PBYTE pbCardCapabilities, DWORD dwCardCapabilitiesSize,
-							__in_bcount(dwExtendedCapabilitiesSize) PBYTE pbExtendedCapabilities, DWORD dwExtendedCapabilitiesSize)
+									   __in_bcount(dwExtendedCapabilitiesSize) PBYTE pbExtendedCapabilities, DWORD dwExtendedCapabilitiesSize)
 {
 	m_fSupportAlgorithmAttributes = ((pbCardCapabilities[0] & (1<<3))?TRUE:FALSE);
 	m_fExtentedLeLcFields = ((pbCardCapabilities[2] & 0x40)?TRUE:FALSE);
-		
+
 	m_fSupportCommandChaining = ((pbCardCapabilities[2] & 0x80)?TRUE:FALSE);
 	if (pbExtendedCapabilities[0] & 0x80)
 	{
@@ -369,7 +369,7 @@ DWORD OpenPGPCardv2::CheckCapabilities(__in_bcount(dwCardCapabilitiesSize) PBYTE
 }
 // read file
 DWORD OpenPGPCardv2::ReadDO(__in OPENPGP_FILE_ID File,
-					__out_bcount(*pdwResponseSize) PBYTE* ppbResponse, __out PDWORD pdwResponseSize)
+							__out_bcount(*pdwResponseSize) PBYTE* ppbResponse, __out PDWORD pdwResponseSize)
 {
 	DWORD dwI;
 	DWORD dwReturn = 0;
@@ -444,7 +444,7 @@ DWORD OpenPGPCardv2::ReadDO(__in OPENPGP_FILE_ID File,
 }
 
 DWORD OpenPGPCardv2::WriteDO(__in OPENPGP_FILE_ID File,
-					__in PBYTE pbData, __in DWORD dwSize)
+							 __in PBYTE pbData, __in DWORD dwSize)
 {
 	DWORD dwReturn = 0;
 	BYTE pbCmd[5 + 256] = {0x00, 0xDA, 0x00, 0x00, 0x00};
@@ -629,17 +629,17 @@ BOOL OpenPGPCardv2::GetPublicKey(__in DWORD dwKeyId, _Out_writes_bytes_to_opt_(*
 	PBYTE pbData = NULL;
 	DWORD dwResponseSize = 0, dwError;
 	BYTE pbCmd[] = {0x00, 
-				    0x47, // GENERATE ASYMMETRIC KEY PAIR
-					0x81, // Reading of actual public key template
-					0x00, // P2 = 0
-					0x00, 
-					0x00,
-					0x02,
-					0x00,// key id
-					0x00, // key length = 0
-					0x00,
-					0x00
-					};
+		0x47, // GENERATE ASYMMETRIC KEY PAIR
+		0x81, // Reading of actual public key template
+		0x00, // P2 = 0
+		0x00, 
+		0x00,
+		0x02,
+		0x00,// key id
+		0x00, // key length = 0
+		0x00,
+		0x00
+	};
 	DWORD dwCmdSize;
 	DWORD dwTotalTlvSize, dwOffset;
 	DWORD dwModulusSizeInBytes, dwExponentSize;
@@ -783,93 +783,63 @@ BOOL OpenPGPCardv2::GetCertificate(__in DWORD dwKeyId, _Out_writes_bytes_to_opt_
 	return fReturn;
 }
 
-BOOL OpenPGPCardv2::SignHash(__in DWORD dwKeyId, __in     HCRYPTHASH  hHash, __in    DWORD  dwFlags,
-					_Out_writes_bytes_to_(*pdwSigLen, *pdwSigLen) BYTE *pbSignature,
-					_Inout_  DWORD       *pdwSigLen)
+BOOL OpenPGPCardv2::SignData(__in DWORD dwKeyId,__in PCWSTR szAlgorithm, __in PBYTE pbHashValue, __in DWORD cbHashValue,
+							 _Out_writes_bytes_to_(*pdwSigLen, *pdwSigLen) BYTE *pbSignature,
+							 _Inout_  DWORD *pdwSigLen)
 {
 	BOOL fReturn = FALSE;
 	DWORD dwError = ERROR_INTERNAL_ERROR;
 	DWORD dwAlgIndex = 0;
-	PBYTE pbHash = NULL;
+	BOOL fNoHashOid = FALSE;
 	__try
 	{
-		Trace(TRACE_LEVEL_VERBOSE, L"Enter dwKey=%d",dwKeyId);
+		Trace(TRACE_LEVEL_VERBOSE, L"Enter dwKey=%d alg=%s",dwKeyId, szAlgorithm);
 		if (dwKeyId >= OPENPGPKEYMAX)
 		{
 			dwError = NTE_KEYSET_NOT_DEF;
 			Trace(TRACE_LEVEL_INFO, L"NTE_KEYSET_NOT_DEF %d", dwKeyId);
 			__leave;
 		}
-		ALG_ID AlgId = 0;
-		DWORD dwSize = sizeof(ALG_ID);
-		if (!CryptGetHashParam(hHash, HP_ALGID, (PBYTE) &AlgId, &dwSize, 0))
+		if (szAlgorithm == NULL)
 		{
-			dwError = GetLastError();
-			Trace(TRACE_LEVEL_ERROR, L"CryptGetHashParam failed 0x%08X", dwError);
-			__leave;
-		}
-		switch (AlgId)
-		{
-		case CALG_SHA1:
-			dwAlgIndex = 0;
-			break;
-		case CALG_SHA_256:
-			dwAlgIndex = 1;
-			break;
-		case CALG_SHA_384:
-			dwAlgIndex = 2;
-			break;
-		case CALG_SHA_512:
-			dwAlgIndex = 3;
-			break;
-		default:
-			if (!(dwKeyId == OPENPGP_KEY_AUTHENTICATION && (dwFlags & CRYPT_NOHASHOID)))
+			if (!(dwKeyId == OPENPGP_KEY_AUTHENTICATION))
 			{
 				dwError = NTE_NOT_SUPPORTED;
-				Trace(TRACE_LEVEL_INFO, L"NTE_NOT_SUPPORTED Alg Id %d", AlgId);
+				Trace(TRACE_LEVEL_INFO, L"signing without OID is not supported for this key");
 				__leave;
-			}
+			} 
+			fNoHashOid = TRUE;
 		}
-		DWORD dwHashSize = 0;
-		dwSize = sizeof(DWORD);
-		if (!CryptGetHashParam(hHash, HP_HASHSIZE, (PBYTE) &dwHashSize, &dwSize, 0))
+		else if (wcscmp(szAlgorithm, BCRYPT_SHA1_ALGORITHM) == 0)
 		{
-			dwError = GetLastError();
-			Trace(TRACE_LEVEL_ERROR, L"CryptGetHashParam failed 0x%08X", dwError);
+			dwAlgIndex = 0;
+		}
+		else if (wcscmp(szAlgorithm, BCRYPT_SHA256_ALGORITHM) == 0)
+		{
+			dwAlgIndex = 1;
+		}
+		else if (wcscmp(szAlgorithm, BCRYPT_SHA384_ALGORITHM) == 0)
+		{
+			dwAlgIndex = 2;
+		}
+		else if (wcscmp(szAlgorithm, BCRYPT_SHA512_ALGORITHM) == 0)
+		{
+			dwAlgIndex = 3;
+		}
+		else
+		{
+			dwError = NTE_NOT_SUPPORTED;
+			Trace(TRACE_LEVEL_INFO, L"NTE_NOT_SUPPORTED Alg Id %s", szAlgorithm);
 			__leave;
 		}
-		pbHash = (PBYTE) malloc(dwHashSize);
-		if (!pbHash)
-		{
-			dwError = ERROR_OUTOFMEMORY;
-			Trace(TRACE_LEVEL_ERROR, L"ERROR_OUTOFMEMORY");
-			__leave;
-		}
-		if (!CryptGetHashParam(hHash, HP_HASHVAL, pbHash, &dwHashSize, 0))
-		{
-			dwError = GetLastError();
-			Trace(TRACE_LEVEL_ERROR, L"CryptGetHashParam failed 0x%08X", dwError);
-			__leave;
-		}
+
 		switch(dwKeyId)
 		{
 		case OPENPGP_KEY_SIGNATURE:
-			if (dwFlags)
-			{
-				dwError = NTE_BAD_FLAGS;
-				Trace(TRACE_LEVEL_ERROR, L"NTE_BAD_FLAGS Key Id %d", dwKeyId);
-				__leave;
-			}
-			fReturn = SignHashWithSignatureKey(dwAlgIndex, pbHash, dwHashSize, pbSignature, pdwSigLen);
+			fReturn = SignHashWithSignatureKey(dwAlgIndex, pbHashValue, cbHashValue, pbSignature, pdwSigLen);
 			break;
 		case OPENPGP_KEY_AUTHENTICATION:
-			if (dwFlags & ~(CRYPT_NOHASHOID))
-			{
-				dwError = NTE_BAD_FLAGS;
-				Trace(TRACE_LEVEL_ERROR, L"NTE_BAD_FLAGS Key Id %d", dwKeyId);
-				__leave;
-			}
-			fReturn = SignHashWithAuthenticationKey(dwAlgIndex, pbHash, dwHashSize, pbSignature, pdwSigLen, (dwFlags & CRYPT_NOHASHOID));
+			fReturn = SignHashWithAuthenticationKey(dwAlgIndex, pbHashValue, cbHashValue, pbSignature, pdwSigLen, fNoHashOid);
 			break;
 		default:
 			dwError = NTE_NOT_SUPPORTED;
@@ -879,29 +849,30 @@ BOOL OpenPGPCardv2::SignHash(__in DWORD dwKeyId, __in     HCRYPTHASH  hHash, __i
 	}
 	__finally
 	{
-		if (pbHash)
-			free(pbHash);
 	}
-	Trace(TRACE_LEVEL_VERBOSE, L"dwError = 0x%08X",dwError);
-	SetLastError(dwError);
+	if (!fReturn)
+	{
+		Trace(TRACE_LEVEL_VERBOSE, L"dwError = 0x%08X",dwError);
+		SetLastError(dwError);
+	}
 	return fReturn;
 
 }
 
 BOOL OpenPGPCardv2::SignHashWithSignatureKey(__in DWORD dwAlgIndex, __in PBYTE pbHashData, __in DWORD cbHashData, 
-					_Out_writes_bytes_to_(*pdwSigLen, *pdwSigLen) BYTE *pbSignature,
-					_Inout_  DWORD       *pdwSigLen)
+											 _Out_writes_bytes_to_(*pdwSigLen, *pdwSigLen) BYTE *pbSignature,
+											 _Inout_  DWORD       *pdwSigLen)
 {
 	BOOL fReturn = FALSE;
 	DWORD dwError = 0;
 	DWORD dwCmdSize = 0, dwI;
 	BYTE pbCmd[6 + 256 + 256] = {0x00, 
-				    0x2A,
-					0x9E,
-					0x9A,
-					0x00,
-					0x00,
-					};
+		0x2A,
+		0x9E,
+		0x9A,
+		0x00,
+		0x00,
+	};
 	PBYTE pbSignedData = NULL;
 	DWORD dwSignedData = 0;
 	__try
@@ -917,7 +888,7 @@ BOOL OpenPGPCardv2::SignHashWithSignatureKey(__in DWORD dwAlgIndex, __in PBYTE p
 		memcpy(pbCmd + dwCmdSize, pbHashData,cbHashData);
 		dwCmdSize += cbHashData;
 
-		
+
 		if (m_fExtentedLeLcFields)
 		{
 			pbCmd[dwCmdSize++] = 0;
@@ -958,19 +929,19 @@ BOOL OpenPGPCardv2::SignHashWithSignatureKey(__in DWORD dwAlgIndex, __in PBYTE p
 }
 
 BOOL OpenPGPCardv2::SignHashWithAuthenticationKey(__in DWORD dwAlgIndex, __in PBYTE pbHashData, __in DWORD cbHashData, 
-					_Out_writes_bytes_to_(*pdwSigLen, *pdwSigLen) BYTE *pbSignature,
-					_Inout_  DWORD       *pdwSigLen, __in BOOL fNoHashOid)
+												  _Out_writes_bytes_to_(*pdwSigLen, *pdwSigLen) BYTE *pbSignature,
+												  _Inout_  DWORD       *pdwSigLen, __in BOOL fNoHashOid)
 {
 	BOOL fReturn = FALSE;
 	DWORD dwError = 0;
 	DWORD dwCmdSize = 0, dwI;
 	BYTE pbCmd[6 + 256 + 256] = {0x00, 
-				    0x88,
-					0x00,
-					0x00,
-					0x00,
-					0x00,
-					};
+		0x88,
+		0x00,
+		0x00,
+		0x00,
+		0x00,
+	};
 	PBYTE pbSignedData = NULL;
 	DWORD dwSignedData = 0;
 	__try
@@ -992,7 +963,7 @@ BOOL OpenPGPCardv2::SignHashWithAuthenticationKey(__in DWORD dwAlgIndex, __in PB
 		}
 		memcpy(pbCmd + dwCmdSize, pbHashData,cbHashData);
 		dwCmdSize += cbHashData;
-		
+
 		if (m_fExtentedLeLcFields)
 		{
 			pbCmd[dwCmdSize++] = 0;
@@ -1007,6 +978,14 @@ BOOL OpenPGPCardv2::SignHashWithAuthenticationKey(__in DWORD dwAlgIndex, __in PB
 		{
 			__leave;
 		}
+		if (*pdwSigLen < dwSignedData)
+		{
+			dwError = NTE_BUFFER_TOO_SMALL;
+			Trace(TRACE_LEVEL_ERROR, L"buffer too small");
+			*pdwSigLen = dwSignedData;
+			__leave;
+		}
+		*pdwSigLen = dwSignedData;
 		// revert the BYTES
 		for(dwI = 0 ; dwI < dwSignedData ; dwI++)
 		{
@@ -1025,8 +1004,9 @@ BOOL OpenPGPCardv2::SignHashWithAuthenticationKey(__in DWORD dwAlgIndex, __in PB
 }
 
 BOOL OpenPGPCardv2::Decrypt(__in DWORD dwKeyId,
-					_Inout_updates_bytes_to_(*pdwDataLen, *pdwDataLen) BYTE *pbData,
-					 _Inout_ DWORD       *pdwDataLen)
+					 __in PBYTE pbEncryptedData, __in DWORD cbEncryptedData,
+					_Out_writes_bytes_to_(*pcbDecryptedData, *pcbDecryptedData) BYTE *pbDecryptedData,
+					_Inout_  DWORD *pcbDecryptedData)
 {
 	BOOL fReturn = FALSE;
 	DWORD dwError = 0;
@@ -1039,7 +1019,7 @@ BOOL OpenPGPCardv2::Decrypt(__in DWORD dwKeyId,
 			Trace(TRACE_LEVEL_ERROR, L"NTE_NOT_SUPPORTED Key Id %d", dwKeyId);
 			__leave;
 		}
-		if (!DecryptOperation(pbData, pdwDataLen))
+		if (!DecryptOperation(pbEncryptedData, cbEncryptedData, pbDecryptedData, pcbDecryptedData))
 		{
 			dwError = GetLastError();
 			Trace(TRACE_LEVEL_ERROR, L"NTE_NOT_SUPPORTED Key Id %d", dwKeyId);
@@ -1054,19 +1034,20 @@ BOOL OpenPGPCardv2::Decrypt(__in DWORD dwKeyId,
 	return fReturn;
 }
 
-BOOL OpenPGPCardv2::DecryptOperation(_Inout_updates_bytes_to_(*pdwDataLen, *pdwDataLen) BYTE *pbData,
-					 _Inout_ DWORD       *pdwDataLen)
+BOOL OpenPGPCardv2::DecryptOperation(__in PBYTE pbEncryptedData, __in DWORD cbEncryptedData,
+					_Out_writes_bytes_to_(*pcbDecryptedData, *pcbDecryptedData) BYTE *pbDecryptedData,
+					_Inout_  DWORD *pcbDecryptedData)
 {
 	BOOL fReturn = FALSE;
 	DWORD dwError = 0;
-	PBYTE pbDecryptedData = NULL;
+	PBYTE pbTempDecryptedData = NULL;
 	DWORD dwCmdSize = 0, dwResponseSize;
 	BYTE pbCmd[6 + 256 + 256] = {0x00, 
-				    0x2A,
-					0x80,
-					0x86,
-					0x00,
-					};
+		0x2A,
+		0x80,
+		0x86,
+		0x00,
+	};
 	DWORD dwI;
 	__try
 	{
@@ -1074,20 +1055,20 @@ BOOL OpenPGPCardv2::DecryptOperation(_Inout_updates_bytes_to_(*pdwDataLen, *pdwD
 		dwCmdSize = 5;
 		if (m_fExtentedLeLcFields)
 		{
-			pbCmd[dwCmdSize++] = (BYTE)((*pdwDataLen +1) / 0x100);
-			pbCmd[dwCmdSize++] = (BYTE)((*pdwDataLen +1) % 0x100);
+			pbCmd[dwCmdSize++] = (BYTE)((cbEncryptedData +1) / 0x100);
+			pbCmd[dwCmdSize++] = (BYTE)((cbEncryptedData +1) % 0x100);
 		}
 		else
 		{
-			pbCmd[dwCmdSize++] = (BYTE)((*pdwDataLen +1) % 0x100);
+			pbCmd[dwCmdSize++] = (BYTE)((cbEncryptedData +1) % 0x100);
 		}
 		pbCmd[dwCmdSize++] = 0;
 		//little endian => big endian
-		for(dwI = 0; dwI < *pdwDataLen; dwI++)
+		for(dwI = 0; dwI < cbEncryptedData; dwI++)
 		{
-			pbCmd[dwCmdSize + dwI] = pbData[*pdwDataLen -1 -dwI];
+			pbCmd[dwCmdSize + dwI] = pbEncryptedData[cbEncryptedData -1 -dwI];
 		}
-		dwCmdSize += *pdwDataLen;
+		dwCmdSize += cbEncryptedData;
 		if (m_fExtentedLeLcFields)
 		{
 			pbCmd[dwCmdSize++] = 0;
@@ -1097,37 +1078,30 @@ BOOL OpenPGPCardv2::DecryptOperation(_Inout_updates_bytes_to_(*pdwDataLen, *pdwD
 		{
 			pbCmd[dwCmdSize++] = 0;
 		}
-		dwError = GetData(pbCmd, dwCmdSize, &pbDecryptedData, &dwResponseSize);
+		dwError = GetData(pbCmd, dwCmdSize, &pbTempDecryptedData, &dwResponseSize);
 		if (dwError)
 		{
 			__leave;
 		}
-		if (dwResponseSize > *pdwDataLen)
-		{
-			dwError = ERROR_MORE_DATA;
-			*pdwDataLen = dwResponseSize;
-			Trace(TRACE_LEVEL_ERROR, L"ERROR_MORE_DATA");
-			__leave;
-		}
-		if ( *pdwDataLen < dwResponseSize + 3 + 11)
+		if ( *pcbDecryptedData < dwResponseSize)
 		{
 			dwError = SCARD_E_INSUFFICIENT_BUFFER;
-			Trace(TRACE_LEVEL_ERROR, L"SCARD_E_INSUFFICIENT_BUFFER %d expected = %d", *pdwDataLen , dwResponseSize);
+			Trace(TRACE_LEVEL_ERROR, L"SCARD_E_INSUFFICIENT_BUFFER %d expected = %d", *pcbDecryptedData , dwResponseSize);
 			__leave;
 		}
 		for(dwI = 0; dwI < dwResponseSize; dwI++)
 		{
-			pbData[dwI] = pbDecryptedData[dwI];
+			pbDecryptedData[dwI] = pbTempDecryptedData[dwI];
 		}
-		*pdwDataLen = dwResponseSize;
+		*pcbDecryptedData = dwResponseSize;
 		fReturn = TRUE;
 	}
 	__finally
 	{
-		if (pbDecryptedData)
+		if (pbTempDecryptedData)
 		{
-			SecureZeroMemory(pbDecryptedData, dwResponseSize);
-			free(pbDecryptedData);
+			SecureZeroMemory(pbTempDecryptedData, dwResponseSize);
+			free(pbTempDecryptedData);
 		}
 	}
 	Trace(TRACE_LEVEL_VERBOSE, L"dwError = 0x%08X",dwError);
@@ -1175,11 +1149,11 @@ BOOL OpenPGPCardv2::AuthenticatePIN(__in DWORD dwPinId,__in PSTR szPin, __out PD
 	PBYTE pbResponse = NULL;
 	// 256 because the size of the PIN must fit in a Byte
 	BYTE pbCmd[256 + 5] = {0x00, 
-				    0x20,
-					0x00,
-					0x82,
-					0x00 
-					};
+		0x20,
+		0x00,
+		0x82,
+		0x00 
+	};
 	__try
 	{
 		Trace(TRACE_LEVEL_VERBOSE, L"Enter PinId=%d",dwPinId);
@@ -1312,7 +1286,7 @@ BOOL OpenPGPCardv2::GetKeyIdForNewKey(__in ALG_ID Algid, __out PDWORD pdwKeyId)
 	return TRUE;
 }
 
-BOOL OpenPGPCardv2::AskForPin(__in PWSTR szPinPROMPT, __in DWORD dwPinId, __out_ecount(MAX_PIN_SIZE) PSTR szPin)
+BOOL OpenPGPCardv2::AskForPin(__in HWND hWndParent, __in PWSTR szPinPROMPT, __in DWORD dwPinId, __out_ecount(MAX_PIN_SIZE) PSTR szPin)
 {
 	DWORD dwResourceId = IDD_PIN;
 	if (dwPinId == OPENPGP_ADMIN_PIN)
@@ -1324,7 +1298,7 @@ BOOL OpenPGPCardv2::AskForPin(__in PWSTR szPinPROMPT, __in DWORD dwPinId, __out_
 		dwResourceId = IDD_PIN_SIGNATURE;
 	}
 	PINDialog dialog(szPinPROMPT, dwResourceId);
-	if (dialog.Show() != IDOK)
+	if (dialog.Show(hWndParent) != IDOK)
 	{
 		Trace(TRACE_LEVEL_INFO, L"Pin dialog cancelled");
 		SetLastError(ERROR_CANCELLED);
@@ -1344,17 +1318,17 @@ DWORD OpenPGPCardv2::CreateKey(DWORD dwKey, DWORD dwBitLen)
 	PBYTE pbModulus, pbExponent;
 	DWORD dwModulusSizeInBytes, dwExponent, dwExponentSize;
 	BYTE pbCmd[] = {0x00, 
-				    0x47,
-					0x80,
-					0x00,
-					0x00,
-					0x00,
-					0x02,
-					0x00,
-					0x00,
-					0x00,
-					0x00
-					};
+		0x47,
+		0x80,
+		0x00,
+		0x00,
+		0x00,
+		0x02,
+		0x00,
+		0x00,
+		0x00,
+		0x00
+	};
 	DWORD dwTotalTlvSize, dwOffset;
 	BYTE pbFingerPrint[20];
 	__try
@@ -1366,7 +1340,7 @@ DWORD OpenPGPCardv2::CreateKey(DWORD dwKey, DWORD dwBitLen)
 			Trace(TRACE_LEVEL_INFO, L"SCARD_E_NO_KEY_CONTAINER %d", dwKey);
 			__leave;
 		}
-		
+
 		// key len
 		Attributes.wModulusLengthInBit = (unsigned short)dwBitLen;
 		Attributes.wExponentLengthInBit = 4 * 8;
@@ -1389,7 +1363,7 @@ DWORD OpenPGPCardv2::CreateKey(DWORD dwKey, DWORD dwBitLen)
 		{
 			pbCmd[dwCmdSize++] = 0;
 		}
-		
+
 		dwReturn = GetData(pbCmd, dwCmdSize, &pbData, &dwResponseSize);
 		if (dwReturn)
 		{
@@ -1456,7 +1430,7 @@ DWORD OpenPGPCardv2::CreateKey(DWORD dwKey, DWORD dwBitLen)
 }
 
 DWORD OpenPGPCardv2::SetKeyAlgorithmAttributes(__in DWORD dwKey,
-								__out POPENPGP_ALGORITHM_ATTRIBUTE pAttributes)
+											   __out POPENPGP_ALGORITHM_ATTRIBUTE pAttributes)
 {
 	DWORD dwReturn;
 	PSTR szAlgorithmAttributes = NULL;
@@ -1534,16 +1508,16 @@ DWORD OpenPGPCardv2::CreateGenerationDateTime(__out PDWORD pdwSecondsSince1970)
 
 
 DWORD OpenPGPCardv2::UpdateGenerationDateTime(__in DWORD dwKey,
-							   __in DWORD dwSecondsSince1970)
+											  __in DWORD dwSecondsSince1970)
 {
 	DWORD dwReturn = 0;
-	
+
 	BYTE pbCommand[] = {0x00, 0xDA, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00};
 	DWORD dwCommandSize = ARRAYSIZE(pbCommand);
 	__try
 	{
-		
-		
+
+
 		pbCommand[3] = OpenPGPKeys[dwKey].bDateTimeTag;
 		pbCommand[5] = (BYTE) (dwSecondsSince1970 / 0x1000000);
 		pbCommand[6] = (BYTE) ((dwSecondsSince1970 % 0x1000000) / 0x10000);
@@ -1559,10 +1533,10 @@ DWORD OpenPGPCardv2::UpdateGenerationDateTime(__in DWORD dwKey,
 }
 
 DWORD OpenPGPCardv2::CreateFingerPrint(__in DWORD dwKey, 
-						__in DWORD dwSecondsSince1970,
-						__inout BYTE pbFingerPrint[20],
-						__in PBYTE pbModulusInLittleEndian, __in DWORD dwModulusSizeInBytes,
-						__in DWORD dwExponent)
+									   __in DWORD dwSecondsSince1970,
+									   __inout BYTE pbFingerPrint[20],
+									   __in PBYTE pbModulusInLittleEndian, __in DWORD dwModulusSizeInBytes,
+									   __in DWORD dwExponent)
 {
 	// modulus in input are in big endian
 	// rfc4880 12.2
@@ -1586,7 +1560,7 @@ DWORD OpenPGPCardv2::CreateFingerPrint(__in DWORD dwKey,
 			Trace(TRACE_LEVEL_ERROR, L"SCARD_E_NO_MEMORY");
 			__leave;
 		}
-		
+
 		pbBuffer[dwOffset++] = 0x99;
 		// -3 because of the header size
 		pbBuffer[dwOffset++] = (BYTE) ((dwBufferSize-3) / 0x100);
@@ -1642,7 +1616,7 @@ DWORD OpenPGPCardv2::CreateFingerPrint(__in DWORD dwKey,
 			Trace(TRACE_LEVEL_ERROR, L"CryptGetHashParam 0x%08X", dwReturn);
 			__leave;
 		}
-		
+
 
 	}
 	__finally
@@ -1650,7 +1624,7 @@ DWORD OpenPGPCardv2::CreateFingerPrint(__in DWORD dwKey,
 		if (pbBuffer)
 			free(pbBuffer);
 		if(hHash) 
-			 CryptDestroyHash(hHash);
+			CryptDestroyHash(hHash);
 		if(hProv) 
 			CryptReleaseContext(hProv,0);
 
@@ -1661,7 +1635,7 @@ DWORD OpenPGPCardv2::CreateFingerPrint(__in DWORD dwKey,
 }
 
 DWORD OpenPGPCardv2::UpdateFingerPrint(__in DWORD dwKey, 
-						__inout BYTE pbFingerPrint[20])
+									   __inout BYTE pbFingerPrint[20])
 {
 	BYTE pbCommand[25] = {0x00, 0xDA, 0x00, 0x00, 0x14};
 	DWORD dwCommandSize = ARRAYSIZE(pbCommand), dwReturn;
@@ -1728,7 +1702,7 @@ DWORD BuildSingleTlv(__in PBYTE buffer, __in BYTE bTlv, __in DWORD dwTlvSize, __
 }
 
 DWORD BuildPrivateKeyTlv( __in PRSAPUBLICKEYBLOB pbPublicKeyBlob, 
-						  __in DWORD dwKey, __in BYTE bFormat,
+						 __in DWORD dwKey, __in BYTE bFormat,
 						 __out PBYTE * ppbTlv, __out PDWORD pdwTlvSize)
 {
 	// structure of the keyblob
@@ -1742,7 +1716,7 @@ DWORD BuildPrivateKeyTlv( __in PRSAPUBLICKEYBLOB pbPublicKeyBlob,
 	//BYTE coefficient[rsapubkey.bitlen/16];
 	//BYTE privateExponent[rsapubkey.bitlen/8];
 	DWORD dwReturn = 0;
-	
+
 	DWORD bitlen = pbPublicKeyBlob->rsapubkey.bitlen;
 	PBYTE pbPublicKeyData = (PBYTE) &(pbPublicKeyBlob->modulus);
 	// 7F48 len is < 7F so its encoded len is 1 bytes
@@ -1778,15 +1752,15 @@ DWORD BuildPrivateKeyTlv( __in PRSAPUBLICKEYBLOB pbPublicKeyBlob,
 		// build 5F48 header in a buffer
 		// size of the data
 		dwKeyDataSize = sizeof(DWORD) // e
-										+ bitlen / 16 //prime1
-										+ bitlen / 16 //prime2
-										;
+			+ bitlen / 16 //prime1
+			+ bitlen / 16 //prime2
+			;
 		if (bFormat & 2)
 		{
 			dwKeyDataSize+= bitlen / 16 //coefficient
-										+ bitlen / 16 //exp1
-										+ bitlen / 16 //exp2
-										;
+				+ bitlen / 16 //exp1
+				+ bitlen / 16 //exp2
+				;
 		}
 		if (bFormat & 1)
 		{
@@ -1796,9 +1770,9 @@ DWORD BuildPrivateKeyTlv( __in PRSAPUBLICKEYBLOB pbPublicKeyBlob,
 		dw5F48HeaderSize = 1 + BuildSingleTlv(b5F48Header, 0x48, dwKeyDataSize, &dwOffset);
 		// build the extended header list in a buffer
 		dwExtendedHeaderListSize = 2 // for the crt to indicate the private key
-								+ dw7F48HeaderSize
-								+ dw5F48HeaderSize
-								+ dwKeyDataSize;
+			+ dw7F48HeaderSize
+			+ dw5F48HeaderSize
+			+ dwKeyDataSize;
 		dwOffset = 0;
 		dw4DHeaderSize = BuildSingleTlv(b4DHeader, 0x4D, dwExtendedHeaderListSize, &dwOffset);
 
@@ -1836,7 +1810,7 @@ DWORD BuildPrivateKeyTlv( __in PRSAPUBLICKEYBLOB pbPublicKeyBlob,
 			(*ppbTlv)[dwOffset+dwI] = pbPublicKeyData[(3*bitlen)/16 - 1 - dwI];
 		}
 		dwOffset += bitlen / 16;
-		
+
 		// prime2
 		for(dwI = 0; dwI < bitlen / 16; dwI++)
 		{
@@ -1949,7 +1923,7 @@ DWORD OpenPGPCardv2::ImportKey(DWORD dwKey, PBYTE pBlob, DWORD dwKeySize)
 			dwReturn = SCARD_E_INVALID_PARAMETER;
 			__leave;
 		}
-		
+
 		Attributes.wModulusLengthInBit = (WORD) pbPublicKeyBlob->rsapubkey.bitlen;
 		Attributes.wExponentLengthInBit = 4 * 8;
 		Attributes.bAlgoId = 1;
@@ -1967,7 +1941,7 @@ DWORD OpenPGPCardv2::ImportKey(DWORD dwKey, PBYTE pBlob, DWORD dwKeySize)
 		if (dwTlvSize > 0xFF)
 		{
 			dwCommandSize = 7 + dwTlvSize;
-			
+
 		}
 		else
 		{
@@ -2055,7 +2029,7 @@ DWORD OpenPGPCardv2::ImportKey(DWORD dwKey, PBYTE pBlob, DWORD dwKeySize)
 
 BOOL OpenPGPCardv2::RemoveKey(__in DWORD dwKey)
 {
-	
+
 	BOOL fReturn = FALSE;
 	DWORD dwError = 0;
 	BYTE pbFingerPrint[20] = {0};
@@ -2064,7 +2038,7 @@ BOOL OpenPGPCardv2::RemoveKey(__in DWORD dwKey)
 		// remove cert
 		/*if (!SaveCertificate(dwKey, NULL, 0, 0))
 		{
-			Trace(TRACE_LEVEL_ERROR, L"removing cert failed 0x%08X", GetLastError());
+		Trace(TRACE_LEVEL_ERROR, L"removing cert failed 0x%08X", GetLastError());
 		}*/
 
 		// remove alias
@@ -2158,7 +2132,7 @@ BOOL OpenPGPCardv2::SetContainerName(PSTR szContainer, DWORD dwKeyId)
 		return FALSE;
 	}
 }
-	
+
 BOOL OpenPGPCardv2::GetKeySpec(__in DWORD dwKeyId, __out PDWORD pdwKeySpec)
 {
 	if (GetAlgIdFromKeyId(dwKeyId) == CALG_RSA_KEYX)

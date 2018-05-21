@@ -21,7 +21,7 @@ class PINDialog {
 public:
     PINDialog(PWSTR szPinPrompt, DWORD dwResourceId);
 	~PINDialog();
-    INT_PTR Show();
+    INT_PTR Show(HWND hWndParent);
 	VOID GetPIN(__out_ecount(MAX_PIN_SIZE) PSTR szPin);
 
 	virtual INT_PTR DialogProc(UINT msg, WPARAM wp, LPARAM lp);

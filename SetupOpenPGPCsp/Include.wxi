@@ -5,4 +5,5 @@
   <!-- Product name as you want it to appear in Add/Remove Programs-->
   <?define ProductName = "NFC Connector client" ?>
   <?define SourceDir = "$(var.SolutionDir)$(var.Platform)\$(var.Configuration)"?>
+  <?define SourceDirAlwaysX86 = "$(var.SolutionDir)x86\$(var.Configuration)"?>
 </Include>

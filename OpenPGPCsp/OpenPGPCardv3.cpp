@@ -295,6 +295,7 @@ BOOL OpenPGPCardv3::ManageSecurityEnvironment(__in DWORD dwKeyId, __in DWORD dwO
 			dwError = NTE_BAD_FLAGS;
 			__leave;
 		}
+		Trace(TRACE_LEVEL_INFO,L"Manage security environment for operation %s", (dwOperationId == PIN_OPERATION_DECRYPT?L"PIN_OPERATION_DECRYPT":L"PIN_OPERATION_SIGN") );
 		if (dwOperationId == PIN_OPERATION_DECRYPT)
 			pbCmd[3] = 0xB8;
 		else
@@ -318,8 +319,9 @@ BOOL OpenPGPCardv3::ManageSecurityEnvironment(__in DWORD dwKeyId, __in DWORD dwO
 }
 
 BOOL OpenPGPCardv3::Decrypt(__in DWORD dwKeyId,
-					_Inout_updates_bytes_to_(*pdwDataLen, *pdwDataLen) BYTE *pbData,
-					 _Inout_ DWORD       *pdwDataLen)
+					 __in PBYTE pbEncryptedData, __in DWORD cbEncryptedData,
+					_Out_writes_bytes_to_(*pcbDecryptedData, *pcbDecryptedData) BYTE *pbDecryptedData,
+					_Inout_  DWORD *pcbDecryptedData)
 {
 	BOOL fReturn = FALSE;
 	DWORD dwError = 0;
@@ -328,7 +330,7 @@ BOOL OpenPGPCardv3::Decrypt(__in DWORD dwKeyId,
 		Trace(TRACE_LEVEL_VERBOSE, L"Enter dwContainer=%d",dwKeyId);
 		if (!m_fSupportMse || dwKeyId == OPENPGP_KEY_CONFIDENTIALITY)
 		{
-			fReturn = OpenPGPCardv2::Decrypt(dwKeyId, pbData, pdwDataLen);
+			fReturn = OpenPGPCardv2::Decrypt(dwKeyId, pbEncryptedData, cbEncryptedData, pbDecryptedData, pcbDecryptedData);
 			dwError = GetLastError();
 			__leave;
 		}
@@ -338,7 +340,7 @@ BOOL OpenPGPCardv3::Decrypt(__in DWORD dwKeyId,
 			Trace(TRACE_LEVEL_ERROR, L"DecryptOperation failed 0x%08X", dwError);
 			__leave;
 		}
-		if (!DecryptOperation(pbData, pdwDataLen))
+		if (!DecryptOperation(pbEncryptedData, cbEncryptedData, pbDecryptedData, pcbDecryptedData))
 		{
 			dwError = GetLastError();
 			Trace(TRACE_LEVEL_ERROR, L"DecryptOperation failed 0x%08X", dwError);
@@ -361,9 +363,9 @@ BOOL OpenPGPCardv3::Decrypt(__in DWORD dwKeyId,
 }
 
 
-BOOL OpenPGPCardv3::SignHash(__in DWORD dwKeyId, __in     HCRYPTHASH  hHash, __in    DWORD  dwFlags,
-					_Out_writes_bytes_to_(*pdwSigLen, *pdwSigLen) BYTE *pbSignature,
-					_Inout_  DWORD       *pdwSigLen)
+BOOL OpenPGPCardv3::SignData(__in DWORD dwKeyId,__in PCWSTR szAlgorithm, __in PBYTE pbHashValue, __in DWORD cbHashValue,
+							 _Out_writes_bytes_to_(*pdwSigLen, *pdwSigLen) BYTE *pbSignature,
+							 _Inout_  DWORD *pdwSigLen)
 {
 	BOOL fReturn = FALSE;
 	DWORD dwError = ERROR_INTERNAL_ERROR;
@@ -380,7 +382,7 @@ BOOL OpenPGPCardv3::SignHash(__in DWORD dwKeyId, __in     HCRYPTHASH  hHash, __i
 		}
 		if (!m_fSupportMse || dwKeyId == OPENPGP_KEY_SIGNATURE || dwKeyId == OPENPGP_KEY_AUTHENTICATION)
 		{
-			fReturn = OpenPGPCardv2::SignHash(dwKeyId, hHash, dwFlags, pbSignature, pdwSigLen);
+			fReturn = OpenPGPCardv2::SignData(dwKeyId, szAlgorithm, pbHashValue, cbHashValue, pbSignature, pdwSigLen);
 			dwError = GetLastError();
 			__leave;
 		}
@@ -390,7 +392,7 @@ BOOL OpenPGPCardv3::SignHash(__in DWORD dwKeyId, __in     HCRYPTHASH  hHash, __i
 			Trace(TRACE_LEVEL_ERROR, L"DecryptOperation failed 0x%08X", dwError);
 			__leave;
 		}
-		if (!OpenPGPCardv2::SignHash(OPENPGP_KEY_AUTHENTICATION, hHash, dwFlags, pbSignature, pdwSigLen))
+		if (!OpenPGPCardv2::SignData(OPENPGP_KEY_AUTHENTICATION, szAlgorithm, pbHashValue, cbHashValue, pbSignature, pdwSigLen))
 		{
 			dwError = GetLastError();
 			Trace(TRACE_LEVEL_ERROR, L"DecryptOperation failed 0x%08X", dwError);

@@ -208,6 +208,66 @@ BOOL testEncryption(PCCERT_CONTEXT pCertContext, HCRYPTKEY hverifyKey)
 	}
 	return fReturn;
 }
+
+BOOL testEncryptionCNG(PCCERT_CONTEXT pCertContext)
+{
+	BOOL fReturn = FALSE;
+	DWORD dwError = 0;
+	DWORD dwKeySpec;
+	BOOL freehProv;
+	NCRYPT_KEY_HANDLE hKey = NULL;
+	BYTE testData[] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+	BYTE testData2[ARRAYSIZE(testData)];
+	BYTE pbBuffer[10000];
+	DWORD dwSize =sizeof(pbBuffer);
+	__try
+	{
+		if (!pCertContext)
+		{
+			__leave;
+		}
+		if (!CryptAcquireCertificatePrivateKey(pCertContext, CRYPT_ACQUIRE_ONLY_NCRYPT_KEY_FLAG , NULL, &hKey, &dwKeySpec, &freehProv))
+		{
+			dwError = GetLastError();
+			printf("error CryptAcquireCertificatePrivateKey 0x%08X\r\n", dwError);
+			__leave;
+		}
+		memcpy(pbBuffer, testData, sizeof(testData));
+		dwSize = sizeof(pbBuffer);
+		dwError = NCryptEncrypt(hKey, testData, sizeof(testData), NULL, pbBuffer, dwSize, &dwSize, NCRYPT_PAD_PKCS1_FLAG);
+		if (dwError)
+		{
+			printf("error NCryptEncrypt 0x%08X\r\n", dwError);
+			__leave;
+		}
+		DWORD dwDecryptedSize;
+		dwError = NCryptDecrypt(hKey, pbBuffer, dwSize, NULL, NULL, 0, &dwDecryptedSize,NCRYPT_PAD_PKCS1_FLAG);
+		if (dwError)
+		{
+			printf("error NCryptDecrypt 0x%08X\r\n", dwError);
+			__leave;
+		}
+		dwError = NCryptDecrypt(hKey, pbBuffer, dwSize, NULL, testData2, ARRAYSIZE(testData2), &dwDecryptedSize,NCRYPT_PAD_PKCS1_FLAG);
+		if (dwError)
+		{
+			printf("error NCryptDecrypt 0x%08X\r\n", dwError);
+			__leave;
+		}
+		if (dwDecryptedSize != sizeof(testData) || memcmp(testData2, testData, sizeof(testData)) != 0)
+		{
+			dwError = NTE_BAD_DATA;
+			printf("error CryptDecrypt invalid\r\n");
+			__leave;
+		}
+		fReturn = TRUE;
+	}
+	__finally
+	{
+		NCryptFreeObject(hKey);
+	}
+	return fReturn;
+}
+
 BOOL testSignature(PCCERT_CONTEXT pCertContext, ALG_ID alg)
 {
 	BOOL fReturn = FALSE;
@@ -423,7 +483,7 @@ void VerifyCert(PCCERT_CONTEXT pCertContext, DWORD dwKeySpec)
 	}
 }
 
-int _tmain(int argc, _TCHAR* argv[])
+int testCsp()
 {
 	HCRYPTPROV hProv = NULL;
 	HCRYPTPROV hProvCurrent = NULL;
@@ -585,3 +645,375 @@ int _tmain(int argc, _TCHAR* argv[])
 	return 0;
 }
 
+
+BOOL testSignatureCNG(PCCERT_CONTEXT pCertContext, PWSTR szAlg)
+{
+	BOOL fReturn = FALSE;
+	DWORD dwError = 0;
+	DWORD dwKeySpec;
+	DWORD dwSize = 0;
+	BOOL freehProv;
+	PBYTE pbBuffer = NULL;
+	NCRYPT_KEY_HANDLE hKey = NULL;
+	BCRYPT_ALG_HANDLE hHashAlg = NULL;
+	DWORD cbHash;
+	BYTE pbHash[100];
+	BYTE pbHashObject[1000];
+	DWORD cbHashObject = 0;
+	BCRYPT_HASH_HANDLE hHash = NULL;
+	BYTE pbRsaTest[1000];
+	BCRYPT_KEY_HANDLE       hTmpKey         = NULL;
+	BCRYPT_ALG_HANDLE       hSignAlg        = NULL;
+	BCRYPT_PKCS1_PADDING_INFO  pi = {szAlg};
+	__try
+	{
+		if (!pCertContext)
+		{
+			__leave;
+		}
+		printf("Test hash %S\r\n", szAlg);
+		if (!CryptAcquireCertificatePrivateKey(pCertContext,  CRYPT_ACQUIRE_ONLY_NCRYPT_KEY_FLAG, NULL, &hKey, &dwKeySpec, &freehProv))
+		{
+			dwError = GetLastError();
+			printf("error CryptAcquireCertificatePrivateKey 0x%08X\r\n", dwError);
+			__leave;
+		}
+		if (szAlg)
+		{
+			dwError = BCryptOpenAlgorithmProvider(&hHashAlg,szAlg,NULL,0);
+			if (dwError)
+			{
+				printf("error BCryptOpenAlgorithmProvider 0x%08X\r\n", dwError);
+				__leave;
+			}
+			dwSize = sizeof(DWORD);
+			dwError = BCryptGetProperty(hHashAlg, BCRYPT_OBJECT_LENGTH, (PBYTE)&cbHashObject, sizeof(DWORD), &dwSize, 0);
+			if (dwError)
+			{
+				printf("error BCryptOpenAlgorithmProvider 0x%08X\r\n", dwError);
+				__leave;
+			}
+			dwSize = sizeof(DWORD);
+			dwError = BCryptGetProperty(hHashAlg, BCRYPT_HASH_LENGTH, (PBYTE)&cbHash, sizeof(DWORD), &dwSize, 0);
+			if (dwError)
+			{
+				printf("error BCryptGetProperty 0x%08X\r\n", dwError);
+				__leave;
+			}
+			dwError = BCryptCreateHash(
+											hHashAlg, 
+											&hHash, 
+											pbHashObject, 
+											cbHashObject, 
+											NULL, 
+											0, 
+											0);
+			if (dwError)
+			{
+				printf("error BCryptCreateHash 0x%08X\r\n", dwError);
+				__leave;
+			}
+			dwError = BCryptHashData(
+											hHash,
+											(PUCHAR) "b,srklhg,nslgnsklgeglseklngeklsnglsenge", 20,
+											0);
+			if (dwError)
+			{
+				printf("error BCryptHashData 0x%08X\r\n", dwError);
+				__leave;
+			}
+    
+			//close the hash
+			dwError = BCryptFinishHash(
+												hHash, 
+												pbHash, 
+												cbHash, 
+												0);
+			if (dwError)
+			{
+				printf("error BCryptFinishHash 0x%08X\r\n", dwError);
+				__leave;
+			}
+		
+			DWORD dwSize = 0;
+			dwError = NCryptSignHash(hKey, &pi,pbHash,cbHash,NULL,0,&dwSize,NCRYPT_PAD_PKCS1_FLAG);
+			if (dwError)
+			{
+				printf("error NCryptSignHash 0x%08X\r\n", dwError);
+				__leave;
+			}
+			pbBuffer = (PBYTE) malloc(dwSize);
+			if (!pbBuffer)
+			{
+				dwError = ERROR_OUTOFMEMORY;
+				printf("error malloc 0x%08X\r\n", dwError);
+				__leave;
+			}
+			dwError = NCryptSignHash(hKey, &pi,pbHash,cbHash,pbBuffer,dwSize,&dwSize,NCRYPT_PAD_PKCS1_FLAG);
+			if (dwError)
+			{
+				printf("error NCryptSignHash 0x%08X\r\n", dwError);
+				__leave;
+			}
+			dwError = NCryptVerifySignature(hKey, &pi, pbHash, cbHash,pbBuffer, dwSize, NCRYPT_PAD_PKCS1_FLAG);
+			if (dwError)
+			{
+				printf("error NCryptVerifySignature 0x%08X\r\n", dwError);
+				__leave;
+			}
+			DWORD dwBlobSize = sizeof(pbRsaTest);
+			dwError = NCryptExportKey(hKey,NULL,
+											BCRYPT_RSAPUBLIC_BLOB,
+											NULL,
+											pbRsaTest,
+											sizeof(pbRsaTest),
+											&dwBlobSize,
+											0);
+			if (dwError)
+			{
+				printf("error NCryptExportKey 0x%08X\r\n", dwError);
+				__leave;
+			}
+			dwError = BCryptOpenAlgorithmProvider(
+													&hSignAlg,
+													BCRYPT_RSA_ALGORITHM,
+													NULL,
+													0);
+			if (dwError)
+			{
+				printf("error BCryptOpenAlgorithmProvider 0x%08X\r\n", dwError);
+				__leave;
+			}
+			dwError = BCryptImportKeyPair(hSignAlg,NULL,BCRYPT_RSAPUBLIC_BLOB,&hTmpKey,pbRsaTest,dwBlobSize,0);
+			if (dwError)
+			{
+				printf("error BCryptImportKeyPair 0x%08X\r\n", dwError);
+				__leave;
+			}
+		
+			dwError = BCryptVerifySignature(hTmpKey,&pi,pbHash, cbHash,pbBuffer, dwSize,BCRYPT_PAD_PKCS1);
+			if (dwError)
+			{
+				printf("error BCryptVerifySignature 0x%08X\r\n", dwError);
+				__leave;
+			}
+		}
+		else //shamd5
+		{
+			memcpy(pbHash, "gnesjogseonbsdo bosdbnsdbsdklnblsdn hesjgvslegpgesoeskseg,glse,vl,sel,evl,slev,ls,lvle", 36);
+			cbHash = 36;
+			DWORD dwSize = 0;
+			dwError = NCryptSignHash(hKey, NULL,pbHash,cbHash,NULL,0,&dwSize,0);
+			if (dwError)
+			{
+				printf("error NCryptSignHash 0x%08X\r\n", dwError);
+				__leave;
+			}
+			pbBuffer = (PBYTE) malloc(dwSize);
+			if (!pbBuffer)
+			{
+				dwError = ERROR_OUTOFMEMORY;
+				printf("error malloc 0x%08X\r\n", dwError);
+				__leave;
+			}
+			dwError = NCryptSignHash(hKey, NULL,pbHash,cbHash,pbBuffer,dwSize,&dwSize,0);
+			if (dwError)
+			{
+				printf("error NCryptSignHash 0x%08X\r\n", dwError);
+				__leave;
+			}
+			dwError = NCryptVerifySignature(hKey, &pi, pbHash, cbHash,pbBuffer, dwSize, NCRYPT_PAD_PKCS1_FLAG);
+			if (dwError)
+			{
+				printf("error NCryptVerifySignature 0x%08X\r\n", dwError);
+				__leave;
+			}
+			DWORD dwBlobSize = sizeof(pbRsaTest);
+			dwError = NCryptExportKey(hKey,NULL,
+											BCRYPT_RSAPUBLIC_BLOB,
+											NULL,
+											pbRsaTest,
+											sizeof(pbRsaTest),
+											&dwBlobSize,
+											0);
+			if (dwError)
+			{
+				printf("error NCryptExportKey 0x%08X\r\n", dwError);
+				__leave;
+			}
+			dwError = BCryptOpenAlgorithmProvider(
+													&hSignAlg,
+													BCRYPT_RSA_ALGORITHM,
+													NULL,
+													0);
+			if (dwError)
+			{
+				printf("error BCryptOpenAlgorithmProvider 0x%08X\r\n", dwError);
+				__leave;
+			}
+			dwError = BCryptImportKeyPair(hSignAlg,NULL,BCRYPT_RSAPUBLIC_BLOB,&hTmpKey,pbRsaTest,dwBlobSize,0);
+			if (dwError)
+			{
+				printf("error BCryptImportKeyPair 0x%08X\r\n", dwError);
+				__leave;
+			}
+		
+			dwError = BCryptVerifySignature(hTmpKey,&pi,pbHash, cbHash,pbBuffer, dwSize,NCRYPT_PAD_PKCS1_FLAG);
+			if (dwError)
+			{
+				printf("error BCryptVerifySignature 0x%08X\r\n", dwError);
+				__leave;
+			}
+		}
+		fReturn = TRUE;
+	}
+	__finally
+	{
+
+		if (hTmpKey)
+			BCryptDestroyKey(hTmpKey);
+		if (hSignAlg)
+			BCryptCloseAlgorithmProvider(hSignAlg,0);
+		if (hHash)
+			BCryptDestroyHash(hHash);
+		if (freehProv && hKey)
+			NCryptFreeObject(hKey);
+
+		if( pbBuffer)
+			free(pbBuffer);
+	}
+	return fReturn;
+}
+
+void testKsp()
+{
+	NCRYPT_PROV_HANDLE HProv = NULL;
+	DWORD dwReturn = 0;
+	HCERTSTORE hStore = NULL;
+	__try
+	{
+		dwReturn = NCryptOpenStorageProvider(&HProv, TEXT(KSPNAME),0);
+		if (dwReturn)
+		{
+			__leave;
+		}
+		NCryptKeyName* key = NULL;
+		PVOID pEnumContext = NULL;
+		while (dwReturn == 0)
+		{
+			dwReturn = NCryptEnumKeys(HProv, NULL, &key, &pEnumContext, 0);
+			if (!dwReturn)
+			{
+				DWORD dwTemp = 0;
+				NCRYPT_KEY_HANDLE hKey = NULL;
+				dwTemp = NCryptOpenKey(HProv, &hKey, key->pszName, key->dwLegacyKeySpec, 0);
+				if (!dwTemp)
+				{
+					BYTE pbTemp[4000];
+					DWORD dwSize = sizeof(pbTemp);
+					dwTemp = NCryptGetProperty(hKey, NCRYPT_CERTIFICATE_PROPERTY, pbTemp, dwSize, &dwSize, 0);
+					if (!dwTemp)
+					{
+						PCCERT_CONTEXT pCertContext= CertCreateCertificateContext(X509_ASN_ENCODING | PKCS_7_ASN_ENCODING, pbTemp, dwSize);
+						if (pCertContext)
+						{
+							/*BOOL fPropertiesChanged;
+							CRYPTUI_VIEWCERTIFICATE_STRUCT certViewInfo;
+							ZeroMemory(&certViewInfo,sizeof(certViewInfo));
+							certViewInfo.dwSize = sizeof(CRYPTUI_VIEWCERTIFICATE_STRUCT);
+							certViewInfo.hwndParent = NULL;
+							certViewInfo.szTitle = TEXT("Info");
+							certViewInfo.pCertContext = pCertContext;
+							CryptUIDlgViewCertificate(&certViewInfo,&fPropertiesChanged);*/
+							CertFreeCertificateContext(pCertContext);
+						}
+					}
+					NCryptFreeObject(hKey);
+				}
+			}
+		}
+		if (pEnumContext)
+			NCryptFreeBuffer(pEnumContext);
+		DWORD dwSize = sizeof(hStore);
+		dwReturn = NCryptGetProperty(HProv,NCRYPT_USER_CERTSTORE_PROPERTY, (PBYTE) &hStore, dwSize, &dwSize, 0);
+		if (dwReturn)
+		{
+			_tprintf( TEXT("NCryptGetProperty failed 0x%08X\r\n"), dwReturn);
+			__leave;
+		}
+		printf( "selecting a cert hosted in the csp (not the windows store)\r\n");
+		HWND hwnd = GetConsoleWindow();
+
+		PCCERT_CONTEXT selectedCert = CryptUIDlgSelectCertificateFromStore(hStore, hwnd, NULL, NULL, 0, 0, NULL);
+		if (!selectedCert)
+		{
+			dwReturn = GetLastError();
+			printf( "CryptUIDlgSelectCertificateFromStore failed 0x%08X\r\n", dwReturn);
+			__leave;
+		}
+
+		if (!testEncryptionCNG(selectedCert))
+		{
+			DWORD dwError = GetLastError();
+			printf( "testEncryption failed 0x%08X\r\n", dwError);
+			__leave;
+		}
+		printf( "encryption test done\r\n");
+
+
+		printf( "testing signatures\r\n");
+		if (!testSignatureCNG(selectedCert, BCRYPT_SHA1_ALGORITHM))
+		{
+			DWORD dwError = GetLastError();
+			printf( "testSignature CALG_SHA1 failed 0x%08X\r\n", dwError);
+			__leave;
+		}
+		if (!testSignatureCNG(selectedCert, BCRYPT_SHA256_ALGORITHM))
+		{
+			DWORD dwError = GetLastError();
+			printf( "testSignature CALG_SHA_256 failed 0x%08X\r\n", dwError);
+			__leave;
+		}
+		if (!testSignatureCNG(selectedCert, BCRYPT_SHA384_ALGORITHM))
+		{
+			DWORD dwError = GetLastError();
+			printf( "testSignature CALG_SHA_384 failed 0x%08X\r\n", dwError);
+			__leave;
+		}
+		/*
+		if (!testSignatureCNG(selectedCert, BCRYPT_SHA512_ALGORITHM))
+		{
+			DWORD dwError = GetLastError();
+			printf( "testSignature CALG_SHA_512 failed 0x%08X\r\n", dwError);
+			__leave;
+		}
+		if (!testSignatureCNG(selectedCert, BCRYPT_MD5_ALGORITHM))
+		{
+			DWORD dwError = GetLastError();
+			printf( "testSignature CALG_MD5 failed 0x%08X\r\n", dwError);
+			__leave;
+		}*/
+		if (!testSignatureCNG(selectedCert, NULL))
+		{
+			DWORD dwError = GetLastError();
+			printf( "testSignature CALG_SSL3_SHAMD5 failed 0x%08X\r\n", dwError);
+			__leave;
+		}
+		printf( "signature test done\r\n");
+	}
+	__finally
+	{
+		if (hStore)
+			CertCloseStore(hStore, 0);
+		if (HProv) 
+			NCryptFreeObject(HProv);
+	}
+}
+
+int _tmain(int argc, _TCHAR* argv[])
+{
+
+	testKsp();
+	//testCsp();
+	return 0;
+}

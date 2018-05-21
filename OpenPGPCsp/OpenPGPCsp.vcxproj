@@ -219,15 +219,20 @@ IF "$(ConfigurationName)" NEQ "Release" "C:\Program Files (x86)\Windows Kits\8.0
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="BaseContainer.h" />
     <ClInclude Include="Card.h" />
     <ClInclude Include="ChangePINDialog.h" />
     <ClInclude Include="constants.h" />
-    <ClInclude Include="Container.h" />
+    <ClInclude Include="CspContainer.h" />
     <ClInclude Include="cspsdk.h" />
+    <ClInclude Include="KeyStorageProvider.h" />
+    <ClInclude Include="KspContainer.h" />
+    <ClInclude Include="ncryptsdk.h" />
     <ClInclude Include="OpenPGPCardv2.h" />
     <ClInclude Include="OpenPGPCardv3.h" />
     <ClInclude Include="PINDialog.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="resource_de.h" />
     <ClInclude Include="SelectOpenPGPv2KeyDialog.h" />
     <ClInclude Include="SelectOpenPGPv3KeyDialog.h" />
     <ClInclude Include="stdafx.h" />
@@ -236,8 +241,9 @@ IF "$(ConfigurationName)" NEQ "Release" "C:\Program Files (x86)\Windows Kits\8.0
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="autoreg.cpp" />
+    <ClCompile Include="BaseContainer.cpp" />
     <ClCompile Include="ChangePINDialog.cpp" />
-    <ClCompile Include="Container.cpp" />
+    <ClCompile Include="CspContainer.cpp" />
     <ClCompile Include="dllmain.cpp">
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</CompileAsManaged>
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsManaged>
@@ -252,6 +258,8 @@ IF "$(ConfigurationName)" NEQ "Release" "C:\Program Files (x86)\Windows Kits\8.0
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
       </PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="KeyStorageProvider.cpp" />
+    <ClCompile Include="KspContainer.cpp" />
     <ClCompile Include="OpenPGPCardv2.cpp" />
     <ClCompile Include="CryptoAPI.cpp" />
     <ClCompile Include="Card.cpp" />
@@ -268,6 +276,7 @@ IF "$(ConfigurationName)" NEQ "Release" "C:\Program Files (x86)\Windows Kits\8.0
     <ClCompile Include="Tracing.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ResourceCompile Include="OpenPGPCsp-DE.rc" />
     <ResourceCompile Include="OpenPGPCsp.rc" />
   </ItemGroup>
   <ItemGroup>

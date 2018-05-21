@@ -21,11 +21,10 @@
 #define MAX_CONTAINER_NAME 100
 #define MAX_PIN_SIZE 256
 #define RTL_ENCRYPT_MEMORY_SIZE 8
-#define KEY_SIZE 20
 #define MAX_READER_NAME 256
 #define MASTERKEY_SIZE 20
 
-class Card;
+
 
 class ContainerKeyHandle
 {
@@ -61,26 +60,18 @@ public:
 	}
 };
 
-typedef struct _CachedPin
-{
-	DWORD dwPinId;
-	BYTE encryptedPin[MAX_PIN_SIZE + RTL_ENCRYPT_MEMORY_SIZE];
-	BYTE Key[KEY_SIZE];
-	FILETIME Timestamp;
-} CachedPin;
-
 // This is the class which holds the private key information
-class  Container  {
+class  CspContainer : BaseContainer {
 
 public :
-                ~Container();
+                ~CspContainer();
                 HCRYPTPROV   getProviderHandle()  const ;
 
-				_Ret_maybenull_ static Container* Create(PCSTR szReader, PCSTR szContainer, BOOL allowUI, BOOL  bMachineKeySet);
-				_Ret_maybenull_ static Container* Load(PCSTR szReader, PCSTR szContainer, BOOL allowUI, BOOL  bMachineKeySet, BOOL fVerifyContext);
+				_Ret_maybenull_ static CspContainer* Create(PCSTR szReader, PCSTR szContainer, BOOL allowUI, BOOL  bMachineKeySet);
+				_Ret_maybenull_ static CspContainer* Load(PCSTR szReader, PCSTR szContainer, BOOL allowUI, BOOL  bMachineKeySet, BOOL fVerifyContext);
 				static BOOL Remove( PCSTR szReader, PCSTR szContainer, BOOL allowUI, BOOL  bMachineKeySet);
 
-				_Ret_maybenull_ static Container* GetContainerFromHandle(HCRYPTPROV handle);
+				_Ret_maybenull_ static CspContainer* GetContainerFromHandle(HCRYPTPROV handle);
 				static BOOL Clean();
 				
 
@@ -196,24 +187,12 @@ public :
 private :
 
                 // parameters
-                BOOL   m_AllowUI;
-				BOOL m_VerifyContext;
-				CHAR m_szContainerName[MAX_CONTAINER_NAME];
+                CHAR m_szContainerName[MAX_CONTAINER_NAME];
 				CHAR m_szReader[MAX_READER_NAME];
-				BYTE m_Key[KEY_SIZE];
-				BYTE m_MasterKey[MASTERKEY_SIZE];
 				HCRYPTPROV m_hProv;
 				DWORD m_dwKeySpec;
 				HCRYPTKEY m_hKey;
-				PWSTR m_szPinPROMPT;
-				PWSTR m_szUIPROMPT;
-				DWORD m_dwCardContainerId;
 				DWORD m_dwPreviousEnumeratedContainer;
-
-				SCARDCONTEXT m_hContext;
-				SCARDHANDLE m_hCard;
-
-				Card* m_Card;
 
 				std::list<ContainerHashHandle*> m_hashHandles;
 				std::list<ContainerKeyHandle*> m_keyHandles;
@@ -228,33 +207,15 @@ private :
 				BOOL AskForSmartCardReader();
 				
 				BOOL SaveCertificate(__in_bcount(dwSize) PBYTE pbData, __in  DWORD dwSize, __in DWORD dwKeySpec);
-
-				BOOL LoadCertificate(_Out_writes_bytes_to_opt_(*pdwSize, *pdwSize) PBYTE pbData, __inout PDWORD pdwSize);
-
 				BOOL EnumerateContainer(_Out_writes_bytes_to_opt_(*pdwDataLen, *pdwDataLen) PSTR szContainer, __inout PDWORD pdwDataLen, DWORD dwFlags);
 
-				BOOL Authenticate(__in DWORD dwPinId);
-
-				BOOL ChangePin();
-				BOOL SetPin(__in DWORD dwPinType, PSTR szPin);
-				BOOL AskPinToUserIfNeeded(__in DWORD dwPinId);
-				BOOL RemovePinInCache(__in DWORD dwPinId);
-				BOOL GetPinInCache(__in DWORD dwPinId, __out_ecount(MAX_PIN_SIZE) PSTR szPin, __out PFILETIME Timestamp);
-				BOOL SetPinInCache(__in DWORD dwPinId, __in_ecount(MAX_PIN_SIZE) PSTR szPin);
-
+				HWND GetParentHwnd();
 				BOOL GetKeyFromReader();
-
-				BOOL GetUserStore(__out HCERTSTORE* phStore);
-				BOOL PopulateUserStoreFromContainerName(__in HCERTSTORE hStore, __in PSTR szContainer, __in DWORD dwKeySpec, __in PBYTE pbData, __in DWORD dwSize);
-
-				BOOL StartTransaction();
-				BOOL EndTransaction(DWORD dwPinId, BOOL fAuthenticated);
+				
 
 				static BOOL CleanProviders();
-				static BOOL CleanPinCache();
 private :
-                Container();
-				static Container* Allocate() { return new Container();}
-				Card* CreateContext();
+                CspContainer();
+				static CspContainer* Allocate() { return new CspContainer();}
 };
 

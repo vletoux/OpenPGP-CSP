@@ -25,15 +25,24 @@
 #include <list>
 #include <windows.h>
 #include <Wincrypt.h>
+#include <bcrypt.h>
+#include <ncrypt.h>
 #include <Winscard.h>
 #include <Winsmcrd.h>
 #include <Evntrace.h>
 #include <tchar.h>
 #include "cspsdk.h"
+#include "ncryptsdk.h"
 #include "tracing.h"
 #include "constants.h"
-#include "Container.h"
+
 #include "Card.h"
+
+#include "BaseContainer.h"
+#include "CspContainer.h"
+#include "KspContainer.h"
+#include "KeyStorageProvider.h"
+
 #include "OpenPGPCardv2.h"
 #include "OpenPGPCardv3.h"
 #include "PINDialog.h"
@@ -48,6 +57,7 @@ typedef   void  (WINAPI *CRYPT_RETURN_HWND)(HWND *phWnd);
 extern CRYPT_RETURN_HWND GetHWND;
 
 #define CSPNAME "OpenPGP CSP"
+#define KSPNAME "OpenPGP KSP"
 
 // fix ntdsapi.h - WINAPI missing
 #define RtlEncryptMemory                SystemFunction040

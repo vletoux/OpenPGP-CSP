@@ -57,7 +57,6 @@ EXTERN_C BOOL WINAPI CPAcquireContext(
 	PCSTR szReader = NULL;
 	CHAR szBuffer[256];
 	PCSTR szContainer = NULL;
-	const CHAR szInvalidChar[] = "<>:\"/\\|?*";
 	Trace(TRACE_LEVEL_INFO, L"--> CPAcquireContext flag 0x%08X", dwFlags);
 	__try
 	{
@@ -116,76 +115,16 @@ EXTERN_C BOOL WINAPI CPAcquireContext(
 	}*/
 
 	
-
-		// check container format name
-		/////////////////////////////////////////////////
-		// Type	Name	Format
-		// I	Reader Name and Container Name	\\.\<Reader Name>\<Container Name>
-		// II	Reader Name and Container Name (NULL)	\\.\<Reader Name>\
-		// III	Container Name Only	<Container Name>
-		// IV	Default Container (NULL) Only	NULL
-
-		if (szSubmittedContainer)
+		if (!ExtractReaderAndContainerFromGeneralNameA(szSubmittedContainer, szBuffer, ARRAYSIZE(szBuffer), &szReader, &szContainer))
 		{
-			if (strncmp(szSubmittedContainer, "\\\\.\\",4) == 0)
-			{
-				if (szSubmittedContainer[4] == 0)
-				{
-					Trace(TRACE_LEVEL_ERROR, L"container name \\\\.\\");
-					dwError = NTE_BAD_KEYSET;
-					__leave;
-				}
-				PCSTR szPos = strchr(szSubmittedContainer + 4, '\\');
-				if (szPos)
-				{
-					DWORD dwSize = (DWORD) (szPos - szSubmittedContainer - 4);
-					if (dwSize + 1 > ARRAYSIZE(szBuffer))
-					{
-						Trace(TRACE_LEVEL_ERROR, L"container name %S contains a reader whose name is too long", szSubmittedContainer);
-						dwError = NTE_BAD_KEYSET;
-						__leave;
-					}
-					strncpy_s(szBuffer, ARRAYSIZE(szBuffer), szSubmittedContainer + 4, dwSize);
-					szReader = szBuffer;
-					if (szPos[1] != 0)
-					{
-						szContainer = szPos + 1;
-					}
-				}
-				else
-				{
-					szReader = szSubmittedContainer + 4;
-				}
-			}
-			else
-			{
-				szContainer = szSubmittedContainer;
-			}
-		}
-		// check container name
-		if (szContainer)
-		{
-			if (strlen(szContainer) > MAX_CONTAINER_NAME-1)
-			{
-				Trace(TRACE_LEVEL_ERROR, L"container name '%S' too long", szContainer);
-				dwError = NTE_BAD_KEYSET;
-				__leave;
-			}
-			for (DWORD i = 0; i< strlen(szInvalidChar); i++)
-			{
-				if (strchr(szContainer,szInvalidChar[i]))
-				{
-					Trace(TRACE_LEVEL_ERROR, L"character '%C' found in container name '%S'", szInvalidChar[i], szContainer);
-					dwError = NTE_BAD_KEYSET;
-					__leave;
-				}
-			}
+			dwError = GetLastError();
+			__leave;
 		}
 
 		// are they asking to delete the container?
 		if ( dwFlags & CRYPT_DELETEKEYSET )
 		{
-			fReturn = Container::Remove( szReader, szContainer, fAllowUI, fMachineKeySet );
+			fReturn = CspContainer::Remove( szReader, szContainer, fAllowUI, fMachineKeySet );
 			if (!fReturn)
 			{
 				dwError = GetLastError();
@@ -196,10 +135,10 @@ EXTERN_C BOOL WINAPI CPAcquireContext(
 		}
 
 		// try to open the container
-		Container* container =  NULL;
+		CspContainer* container =  NULL;
 		if ( dwFlags & CRYPT_NEWKEYSET ) 
 		{
-			container = Container::Create( szReader, szContainer, fAllowUI, fMachineKeySet );
+			container = CspContainer::Create( szReader, szContainer, fAllowUI, fMachineKeySet );
 			if (  NULL  == container ) 
 			{
 				dwError = GetLastError();
@@ -211,7 +150,7 @@ EXTERN_C BOOL WINAPI CPAcquireContext(
 		{
 			// verify context = no decrypt nor sign
 			// verify the capability of the smart card is null container
-			container = Container::Load( szReader, szContainer, fAllowUI, fMachineKeySet, fVerifyContext);
+			container = CspContainer::Load( szReader, szContainer, fAllowUI, fMachineKeySet, fVerifyContext);
 			if (  NULL  == container ) 
 			{
 				dwError = GetLastError();
@@ -262,7 +201,7 @@ EXTERN_C BOOL WINAPI CPReleaseContext(
 			Trace(TRACE_LEVEL_ERROR, L"NTE_BAD_FLAGS 0x%08X", dwFlags);
 			__leave;
 		}
-		Container* container =  Container::GetContainerFromHandle(hProv);
+		CspContainer* container =  CspContainer::GetContainerFromHandle(hProv);
 		if (!container)
 		{
 			dwError = GetLastError();
@@ -313,7 +252,7 @@ EXTERN_C BOOL WINAPI CPSetProvParam(
 	__try
 	{
 		// ownership check
-		Container* container =  Container::GetContainerFromHandle(hProv);
+		CspContainer* container =  CspContainer::GetContainerFromHandle(hProv);
 		if (!container)
 		{
 			dwError = GetLastError();
@@ -367,7 +306,7 @@ EXTERN_C BOOL WINAPI CPGetProvParam(
 	__try
 	{
 		// ownership check
-		Container* container =  Container::GetContainerFromHandle(hProv);
+		CspContainer* container =  CspContainer::GetContainerFromHandle(hProv);
 		if (!container)
 		{
 			dwError = GetLastError();
@@ -417,7 +356,7 @@ EXTERN_C BOOL WINAPI CPGenRandom(
 	__try
 	{
 		// ownership check
-		Container* container =  Container::GetContainerFromHandle(hProv);
+		CspContainer* container =  CspContainer::GetContainerFromHandle(hProv);
 		if (!container)
 		{
 			dwError = GetLastError();
@@ -471,7 +410,7 @@ EXTERN_C BOOL WINAPI CPCreateHash(
 	__try
 	{
 		// ownership check
-		Container* container =  Container::GetContainerFromHandle(hProv);
+		CspContainer* container =  CspContainer::GetContainerFromHandle(hProv);
 		if (!container)
 		{
 			dwError = GetLastError();
@@ -525,7 +464,7 @@ CPHashData(
 	__try
 	{
 		// ownership check
-		Container* container =  Container::GetContainerFromHandle(hProv);
+		CspContainer* container =  CspContainer::GetContainerFromHandle(hProv);
 		if (!container)
 		{
 			dwError = GetLastError();
@@ -580,7 +519,7 @@ CPHashSessionKey(
 	__try
 	{
 		// ownership check
-		Container* container =  Container::GetContainerFromHandle(hProv);
+		CspContainer* container =  CspContainer::GetContainerFromHandle(hProv);
 		if (!container)
 		{
 			dwError = GetLastError();
@@ -639,7 +578,7 @@ CPSignHash(
 	__try
 	{
 		// ownership check
-		Container* container =  Container::GetContainerFromHandle(hProv);
+		CspContainer* container =  CspContainer::GetContainerFromHandle(hProv);
 		if (!container)
 		{
 			dwError = GetLastError();
@@ -688,7 +627,7 @@ CPDestroyHash(
 	__try
 	{
 		// ownership check
-		Container* container =  Container::GetContainerFromHandle(hProv);
+		CspContainer* container =  CspContainer::GetContainerFromHandle(hProv);
 		if (!container)
 		{
 			dwError = GetLastError();
@@ -742,7 +681,7 @@ CPSetHashParam(
 	__try
 	{
 		// ownership check
-		Container* container =  Container::GetContainerFromHandle(hProv);
+		CspContainer* container =  CspContainer::GetContainerFromHandle(hProv);
 		if (!container)
 		{
 			dwError = GetLastError();
@@ -799,7 +738,7 @@ CPGetHashParam(
 	__try
 	{
 		// ownership check
-		Container* container =  Container::GetContainerFromHandle(hProv);
+		CspContainer* container =  CspContainer::GetContainerFromHandle(hProv);
 		if (!container)
 		{
 			dwError = GetLastError();
@@ -850,7 +789,7 @@ EXTERN_C BOOL WINAPI CPGenKey(
 	__try
 	{
 		// ownership check
-		Container* container =  Container::GetContainerFromHandle(hProv);
+		CspContainer* container =  CspContainer::GetContainerFromHandle(hProv);
 		if (!container)
 		{
 			dwError = GetLastError();
@@ -906,7 +845,7 @@ CPDeriveKey(
 	__try
 	{
 		// ownership check
-		Container* container =  Container::GetContainerFromHandle(hProv);
+		CspContainer* container =  CspContainer::GetContainerFromHandle(hProv);
 		if (!container)
 		{
 			dwError = GetLastError();
@@ -957,7 +896,7 @@ CPDestroyKey(
 	__try
 	{
 		// ownership check
-		Container* container =  Container::GetContainerFromHandle(hProv);
+		CspContainer* container =  CspContainer::GetContainerFromHandle(hProv);
 		if (!container)
 		{
 			dwError = GetLastError();
@@ -1013,7 +952,7 @@ CPSetKeyParam(
 	__try
 	{
 		// ownership check
-		Container* container =  Container::GetContainerFromHandle(hProv);
+		CspContainer* container =  CspContainer::GetContainerFromHandle(hProv);
 		if (!container)
 		{
 			dwError = GetLastError();
@@ -1070,7 +1009,7 @@ CPGetKeyParam(
 	__try
 	{
 		// ownership check
-		Container* container =  Container::GetContainerFromHandle(hProv);
+		CspContainer* container =  CspContainer::GetContainerFromHandle(hProv);
 		if (!container)
 		{
 			dwError = GetLastError();
@@ -1135,7 +1074,7 @@ CPExportKey(
 	__try
 	{
 		// ownership check
-		Container* container =  Container::GetContainerFromHandle(hProv);
+		CspContainer* container =  CspContainer::GetContainerFromHandle(hProv);
 		if (!container)
 		{
 			dwError = GetLastError();
@@ -1193,7 +1132,7 @@ CPImportKey(
 	__try
 	{
 		// ownership check
-		Container* container =  Container::GetContainerFromHandle(hProv);
+		CspContainer* container =  CspContainer::GetContainerFromHandle(hProv);
 		if (!container)
 		{
 			dwError = GetLastError();
@@ -1256,7 +1195,7 @@ CPEncrypt(
 	__try
 	{
 		// ownership check
-		Container* container =  Container::GetContainerFromHandle(hProv);
+		CspContainer* container =  CspContainer::GetContainerFromHandle(hProv);
 		if (!container)
 		{
 			dwError = GetLastError();
@@ -1316,7 +1255,7 @@ CPDecrypt(
 	__try
 	{
 		// ownership check
-		Container* container =  Container::GetContainerFromHandle(hProv);
+		CspContainer* container =  CspContainer::GetContainerFromHandle(hProv);
 		if (!container)
 		{
 			dwError = GetLastError();
@@ -1380,7 +1319,7 @@ CPVerifySignature(
 	__try
 	{
 		// ownership check
-		Container* container =  Container::GetContainerFromHandle(hProv);
+		CspContainer* container =  CspContainer::GetContainerFromHandle(hProv);
 		if (!container)
 		{
 			dwError = GetLastError();
@@ -1431,7 +1370,7 @@ CPGetUserKey(
 	__try
 	{
 		// ownership check
-		Container* container =  Container::GetContainerFromHandle(hProv);
+		CspContainer* container =  CspContainer::GetContainerFromHandle(hProv);
 		if (!container)
 		{
 			dwError = GetLastError();

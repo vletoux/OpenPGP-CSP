@@ -25,9 +25,7 @@
 #define FILE_MASTER_KEY 5
 #define FILE_SMARTCARD_DIRECTORY 6
 
-std::list<Container*> m_containers;
-std::list<CachedPin*> m_cachedPins;
-
+std::list<CspContainer*> m_containers;
 
 #ifdef _DEBUG
 //if defined do not enable smart card transaction
@@ -35,7 +33,7 @@ std::list<CachedPin*> m_cachedPins;
 #define NO_TRANSACTION 1
 #endif _DEBUG
 
-Container::Container()
+CspContainer::CspContainer()
 {
 	m_hProv = NULL;
 	m_VerifyContext = FALSE;
@@ -57,7 +55,7 @@ Container::Container()
 	}
 }
 
-Container::~Container()
+CspContainer::~CspContainer()
 {
 	Trace(TRACE_LEVEL_VERBOSE, L"free hash and keys");
 	std::list<ContainerKeyHandle*>::const_iterator it1 (m_keyHandles.begin());
@@ -91,7 +89,16 @@ Container::~Container()
 	if (m_hContext) SCardReleaseContext(m_hContext);
 }
 
-_Ret_maybenull_ HCRYPTHASH Container::GetHash(__in HCRYPTHASH hHash)
+BOOL CleanOpenPGPCardv2Data();
+BOOL CspContainer::Clean()
+{
+	if (!CleanPinCache()) return FALSE;
+	if (!CleanProviders()) return FALSE;
+	if (!CleanOpenPGPCardv2Data()) return FALSE;
+	return TRUE;
+}
+
+_Ret_maybenull_ HCRYPTHASH CspContainer::GetHash(__in HCRYPTHASH hHash)
 {
 	if (!hHash) 
 	{
@@ -109,7 +116,7 @@ _Ret_maybenull_ HCRYPTHASH Container::GetHash(__in HCRYPTHASH hHash)
 	SetLastError(NTE_BAD_UID);
 	return NULL;
 }
-_Ret_maybenull_ HCRYPTKEY Container::GetKey(__in HCRYPTKEY hKey, __out_opt PDWORD pdwKeySpec)
+_Ret_maybenull_ HCRYPTKEY CspContainer::GetKey(__in HCRYPTKEY hKey, __out_opt PDWORD pdwKeySpec)
 {
 	if (!hKey) 
 	{
@@ -167,90 +174,15 @@ PSTR GetUniqueIDString()
 	return sTemp;
 }
 
-Card* Container::CreateContext()
-{
-	OPENPGP_AID Aid = {0};
-	DWORD dwReturn = 0;
-	BYTE pbSelectOpenPGPAppletCmd[] = {0x00, 
-				    0xA4,
-					0x04,
-					0x00,
-					0x06,
-					0xD2, 0x76, 0x00, 0x01, 0x24, 0x01,
-					0x00
-					};
-	BYTE pbGetDataAid[] = {0x00,0xCA,0x00,0x4F,0x00,0x00,0x00};
-	BYTE     recvbuf[256];
-	DWORD     recvlen = sizeof(recvbuf);
-	Card* returnedCard = NULL;
-	__try
-	{
-		TraceAPDUIn(pbSelectOpenPGPAppletCmd, ARRAYSIZE(pbSelectOpenPGPAppletCmd));
-		dwReturn = SCardTransmit(m_hCard, 
-									SCARD_PCI_T1, 
-									pbSelectOpenPGPAppletCmd, 
-									ARRAYSIZE(pbSelectOpenPGPAppletCmd), 
-									NULL, 
-									recvbuf, 
-									&recvlen);
-		TraceAPDUOut(dwReturn, recvbuf, recvlen);
-		if (dwReturn != ERROR_SUCCESS || recvlen < 2 || !(( recvbuf[recvlen-2] == 0x90 ) && ( recvbuf[recvlen-1] == 0x00 )))
-		{
-			Trace(TRACE_LEVEL_ERROR, L"unable to select the OpenPGP applet");
-			dwReturn = SCARD_E_UNEXPECTED;
-			__leave;
-		}
-		recvlen = sizeof(recvbuf);
-		TraceAPDUIn(pbGetDataAid, ARRAYSIZE(pbGetDataAid));
-		dwReturn = SCardTransmit(m_hCard, 
-									SCARD_PCI_T1, 
-									pbGetDataAid, 
-									ARRAYSIZE(pbGetDataAid), 
-									NULL, 
-									recvbuf, 
-									&recvlen);
-		TraceAPDUOut(dwReturn, recvbuf, recvlen);
-		if (dwReturn != ERROR_SUCCESS || recvlen < 2 || !(( recvbuf[recvlen-2] == 0x90 ) && ( recvbuf[recvlen-1] == 0x00 )))
-		{
-			Trace(TRACE_LEVEL_ERROR, L"unable to get the AID");
-			dwReturn = SCARD_E_UNEXPECTED;
-			__leave;
-		}
-		if (recvlen - 2 != sizeof(OPENPGP_AID))
-		{
-			Trace(TRACE_LEVEL_ERROR, L"dwApplicationIdentifierSize = %02X", recvlen-2);
-			dwReturn = SCARD_E_UNEXPECTED;
-			__leave;
-		}
-		Aid = *((OPENPGP_AID*) recvbuf);
-		returnedCard = OpenPGPCardv3::CreateContext(m_hContext, m_hCard, m_AllowUI, Aid);
-		if (returnedCard)
-		{
-			Trace(TRACE_LEVEL_INFO, L"selecting OpenPGPv3");
-			__leave;
-		}
-		returnedCard = OpenPGPCardv2::CreateContext(m_hContext, m_hCard, m_AllowUI, Aid);
-		if (returnedCard)
-		{
-			Trace(TRACE_LEVEL_INFO, L"selecting OpenPGPv2");
-			__leave;
-		}
-	}
-	__finally
-	{
-	}
-	return returnedCard;
-}
-
-_Ret_maybenull_ Container* Container::Create(PCSTR szReader, PCSTR szContainer, BOOL allowUI, BOOL  bMachineKeySet)
+_Ret_maybenull_ CspContainer* CspContainer::Create(PCSTR szReader, PCSTR szContainer, BOOL allowUI, BOOL  bMachineKeySet)
 {
 	BOOL fReturn = FALSE;
 	DWORD dwError = 0;
 	PSTR szGuid = NULL;
-	Container* container = NULL;
+	CspContainer* container = NULL;
 	__try
 	{
-		container = Container::Allocate();
+		container = CspContainer::Allocate();
 		if (!container)
 		{
 			dwError = NTE_NO_MEMORY;
@@ -290,7 +222,7 @@ _Ret_maybenull_ Container* Container::Create(PCSTR szReader, PCSTR szContainer, 
 	return container;
 }
 
-BOOL Container::AskForSmartCardReader()
+BOOL CspContainer::AskForSmartCardReader()
 {
 	CHAR szCard[256] = {0};
 	m_szReader[0] = 0;
@@ -308,7 +240,7 @@ BOOL Container::AskForSmartCardReader()
 	return dwError == 0;
 }
 
-BOOL Container::CreateContainer(__in_opt PCSTR szReaderGiven, __in PCSTR szContainer, __in BOOL allowUI)
+BOOL CspContainer::CreateContainer(__in_opt PCSTR szReaderGiven, __in PCSTR szContainer, __in BOOL allowUI)
 {
 	BOOL fReturn = FALSE;
 	DWORD dwError = 0;
@@ -375,7 +307,7 @@ BOOL Container::CreateContainer(__in_opt PCSTR szReaderGiven, __in PCSTR szConta
                            &cch );
 			if (dwError || !pmszReaders)
 			{
-				Trace(TRACE_LEVEL_ERROR,L"SCardConnectA failed 0x%08X", dwError);
+				Trace(TRACE_LEVEL_ERROR,L"SCardListReadersA failed 0x%08X", dwError);
 				__leave;
 			}
 			szCurrentReader = pmszReaders;
@@ -479,13 +411,13 @@ BOOL Container::CreateContainer(__in_opt PCSTR szReaderGiven, __in PCSTR szConta
 }
 				
 
-_Ret_maybenull_ Container* Container::Load(PCSTR szReader, PCSTR szContainer, BOOL allowUI, BOOL  bMachineKeySet, BOOL fVerifyContext)
+_Ret_maybenull_ CspContainer* CspContainer::Load(PCSTR szReader, PCSTR szContainer, BOOL allowUI, BOOL  bMachineKeySet, BOOL fVerifyContext)
 {
 	DWORD dwError = 0;
-	Container* container = NULL;
+	CspContainer* container = NULL;
 	__try
 	{
-		container = Container::Allocate();
+		container = CspContainer::Allocate();
 		if (!container)
 		{
 			dwError = NTE_NO_MEMORY;
@@ -508,7 +440,7 @@ _Ret_maybenull_ Container* Container::Load(PCSTR szReader, PCSTR szContainer, BO
 	return container;
 }
 
-BOOL Container::LocateContainer(__in_opt PCSTR szContainer)
+BOOL CspContainer::LocateContainer(__in_opt PCSTR szContainer)
 {
 	DWORD dwError = 0;
 	BOOL fReturn = FALSE;
@@ -537,7 +469,7 @@ BOOL Container::LocateContainer(__in_opt PCSTR szContainer)
 	return fReturn;
 }
 
-BOOL Container::LoadContainer(__in_opt PCSTR szReaderGiven, __in_opt PCSTR szContainer, __in BOOL allowUI, __in BOOL fVerifyContext)
+BOOL CspContainer::LoadContainer(__in_opt PCSTR szReaderGiven, __in_opt PCSTR szContainer, __in BOOL allowUI, __in BOOL fVerifyContext)
 {
 	BOOL fReturn = FALSE;
 	DWORD dwError = 0;
@@ -600,7 +532,7 @@ BOOL Container::LoadContainer(__in_opt PCSTR szReaderGiven, __in_opt PCSTR szCon
                            &cch );
 			if (dwError || !pmszReaders)
 			{
-				Trace(TRACE_LEVEL_ERROR,L"SCardConnectA failed 0x%08X", dwError);
+				Trace(TRACE_LEVEL_ERROR,L"SCardListReadersA failed 0x%08X", dwError);
 				__leave;
 			}
 			szCurrentReader = pmszReaders;
@@ -756,14 +688,14 @@ BOOL Container::LoadContainer(__in_opt PCSTR szReaderGiven, __in_opt PCSTR szCon
 }
 
 
-BOOL Container::Remove(PCSTR szReader, PCSTR szContainer, BOOL allowUI, BOOL  bMachineKeySet)
+BOOL CspContainer::Remove(PCSTR szReader, PCSTR szContainer, BOOL allowUI, BOOL  bMachineKeySet)
 {
 	BOOL fReturn = FALSE;
 	DWORD dwError = 0;
-	Container* container = NULL;
+	CspContainer* container = NULL;
 	__try
 	{
-		container = Container::Allocate();
+		container = CspContainer::Allocate();
 		if (!container)
 		{
 			dwError = NTE_NO_MEMORY;
@@ -790,10 +722,10 @@ BOOL Container::Remove(PCSTR szReader, PCSTR szContainer, BOOL allowUI, BOOL  bM
 	return fReturn;
 }
 
-BOOL Container::RemoveContainer(__in_opt PCSTR szReaderGiven, __in_opt PCSTR szContainer, __in BOOL allowUI)
+BOOL CspContainer::RemoveContainer(__in_opt PCSTR szReaderGiven, __in_opt PCSTR szContainer, __in BOOL allowUI)
 {
 	DWORD dwError = 0;
-	Container* container = NULL;
+	CspContainer* container = NULL;
 	// double null terminated
 	WCHAR szPath[MAX_PATH] = {0};
 	BOOL fReturn = FALSE;
@@ -846,7 +778,7 @@ BOOL Container::RemoveContainer(__in_opt PCSTR szReaderGiven, __in_opt PCSTR szC
                            &cch );
 			if (dwError || !pmszReaders)
 			{
-				Trace(TRACE_LEVEL_ERROR,L"SCardConnectA failed 0x%08X", dwError);
+				Trace(TRACE_LEVEL_ERROR,L"SCardListReadersA failed 0x%08X", dwError);
 				__leave;
 			}
 			szCurrentReader = pmszReaders;
@@ -884,13 +816,13 @@ BOOL Container::RemoveContainer(__in_opt PCSTR szReaderGiven, __in_opt PCSTR szC
 			}
 			//OK
 		}
-		if (!m_Card->GetPIN(m_dwCardContainerId, PIN_OPERATION_DELETE, &dwPinId))
+		if (!GetPIN(PIN_OPERATION_DELETE, &dwPinId))
 		{
 			dwError = GetLastError();
 			Trace(TRACE_LEVEL_ERROR, L"GetPIN failed 0x%08X", dwError);
 			__leave;
 		}
-		if (!AskPinToUserIfNeeded(dwPinId))
+		if (!AskPinToUserIfNeeded(GetParentHwnd(), dwPinId))
 		{
 			dwError = GetLastError();
 			Trace(TRACE_LEVEL_ERROR, L"StartTransaction failed 0x%08X", dwError);
@@ -947,7 +879,7 @@ BOOL Container::RemoveContainer(__in_opt PCSTR szReaderGiven, __in_opt PCSTR szC
 	return fReturn;
 }
 
-_Ret_maybenull_ Container* Container::GetContainerFromHandle(HCRYPTPROV handle)
+_Ret_maybenull_ CspContainer* CspContainer::GetContainerFromHandle(HCRYPTPROV handle)
 {
  	if (!handle)
 	{
@@ -955,12 +887,12 @@ _Ret_maybenull_ Container* Container::GetContainerFromHandle(HCRYPTPROV handle)
 		SetLastError( ERROR_INVALID_PARAMETER );
 		return NULL;
 	}
-	std::list<Container*>::const_iterator it (m_containers.begin());
+	std::list<CspContainer*>::const_iterator it (m_containers.begin());
 	for(;it!=m_containers.end();++it) 
 	{
-		if ((HCRYPTPROV)((Container*)(*it)) == handle)
+		if ((HCRYPTPROV)((CspContainer*)(*it)) == handle)
 		{
-			return (Container*) handle;
+			return (CspContainer*) handle;
 		}
 	}
 	Trace(TRACE_LEVEL_ERROR, L"handle 0x%Ix unknown", handle);
@@ -968,9 +900,9 @@ _Ret_maybenull_ Container* Container::GetContainerFromHandle(HCRYPTPROV handle)
 	return NULL;
 }
 
-BOOL Container::CleanProviders()
+BOOL CspContainer::CleanProviders()
 {
-	std::list<Container*>::const_iterator it (m_containers.begin());
+	std::list<CspContainer*>::const_iterator it (m_containers.begin());
 	while (it!=m_containers.end()) 
 	{
 		//delete (*it);
@@ -979,7 +911,7 @@ BOOL Container::CleanProviders()
 	return TRUE;
 }
 
-BOOL Container::Unload()
+BOOL CspContainer::Unload()
 {
 	Trace(TRACE_LEVEL_VERBOSE, L"free this");
 	m_containers.remove(this);
@@ -987,7 +919,7 @@ BOOL Container::Unload()
 	return TRUE;
 }
 
-_Success_(return) BOOL Container::GetProvParam(
+_Success_(return) BOOL CspContainer::GetProvParam(
 						_In_    DWORD dwParam,
 						_Out_writes_bytes_to_opt_(*pdwDataLen, *pdwDataLen) LPBYTE  pbData,
 						_Inout_  DWORD *pdwDataLen,
@@ -1061,7 +993,7 @@ _Success_(return) BOOL Container::GetProvParam(
 			*pdwDataLen =  sizeof(HCERTSTORE);
 			if (pbData)
 			{
-				fReturn = GetUserStore((HCERTSTORE*)pbData);
+				fReturn = GetUserStore(TEXT(CSPNAME), (HCERTSTORE*)pbData);
 				if (!fReturn)
 				{
 					dwError = GetLastError();
@@ -1253,7 +1185,7 @@ _Success_(return) BOOL Container::GetProvParam(
 	return fReturn;
 }
 
-BOOL Container::SetProvParam(
+BOOL CspContainer::SetProvParam(
 						__in    DWORD dwParam,
 						__in     CONST  BYTE *pbData,
 						__in    DWORD  dwFlags)
@@ -1309,7 +1241,7 @@ BOOL Container::SetProvParam(
 	return fReturn;
 }
 
-BOOL Container::GenRandom(
+BOOL CspContainer::GenRandom(
 					_In_                    DWORD   dwLen,
 					_Inout_updates_bytes_(dwLen)   BYTE    *pbBuffer)
 {
@@ -1324,7 +1256,7 @@ BOOL Container::GenRandom(
 	return fReturn;
 }
 
-BOOL Container::CreateHash(
+BOOL CspContainer::CreateHash(
 					__in     ALG_ID  Algid,
 					__in     HCRYPTKEY   hKey,
 					__in     DWORD  dwFlags,
@@ -1378,7 +1310,7 @@ BOOL Container::CreateHash(
 	return fReturn;
 }
 
-BOOL Container::HashData(
+BOOL CspContainer::HashData(
 					__in     HCRYPTHASH  hHash,
 					_In_reads_bytes_(dwDataLen)     CONST  BYTE *pbData,
 					__in    DWORD dwDataLen,
@@ -1409,7 +1341,7 @@ BOOL Container::HashData(
 	SetLastError(dwError);
 	return fReturn;
 }
-BOOL Container::HashSessionKey(
+BOOL CspContainer::HashSessionKey(
 					__in     HCRYPTHASH  hHash,
 					__in     HCRYPTKEY   hKey,
 					__in    DWORD  dwFlags)
@@ -1446,7 +1378,7 @@ BOOL Container::HashSessionKey(
 	SetLastError(dwError);
 	return fReturn;
 }
-BOOL Container::SignHash(
+BOOL CspContainer::SignHash(
 					__in     HCRYPTHASH  hHash,
 					__in    DWORD  dwKeySpec,
 					_In_opt_    LPCTSTR szDescription,
@@ -1459,6 +1391,8 @@ BOOL Container::SignHash(
 	DWORD dwPinId = (DWORD) -1;
 	BOOL fEndTransaction = FALSE;
 	BOOL fAuthenticated = FALSE;
+	PWSTR szAlgorithm = NULL;
+	PBYTE pbHash = NULL;
 	__try
 	{
 		HCRYPTHASH hMyHash = GetHash(hHash);
@@ -1474,6 +1408,49 @@ BOOL Container::SignHash(
 			Trace(TRACE_LEVEL_ERROR, L"Invalid keyspec");
 			__leave;
 		}
+		ALG_ID AlgId = 0;
+		DWORD dwSize = sizeof(ALG_ID);
+		if (!CryptGetHashParam(hHash, HP_ALGID, (PBYTE) &AlgId, &dwSize, 0))
+		{
+			dwError = GetLastError();
+			Trace(TRACE_LEVEL_ERROR, L"CryptGetHashParam failed 0x%08X", dwError);
+			__leave;
+		}
+		if (dwFlags == CRYPT_NOHASHOID)
+		{
+			szAlgorithm = NULL;
+		}
+		else if (dwFlags != 0)
+		{
+			dwError = NTE_NOT_SUPPORTED;
+			Trace(TRACE_LEVEL_INFO, L"NTE_NOT_SUPPORTED dwFlags 0x%08X", dwFlags);
+			__leave;
+		}
+		else
+		{
+			switch (AlgId)
+			{
+				case CALG_SHA1:
+					szAlgorithm = BCRYPT_SHA1_ALGORITHM;
+					break;
+				case CALG_SHA_256:
+					szAlgorithm = BCRYPT_SHA256_ALGORITHM;
+					break;
+				case CALG_SHA_384:
+					szAlgorithm = BCRYPT_SHA384_ALGORITHM;
+					break;
+				case CALG_SHA_512:
+					szAlgorithm = BCRYPT_SHA512_ALGORITHM;
+					break;
+				case CALG_SSL3_SHAMD5:
+					szAlgorithm = NULL;
+					break;
+				default:
+					dwError = NTE_BAD_ALGID;
+					Trace(TRACE_LEVEL_ERROR, L"Unsupported Algid 0x%08X", AlgId);
+					__leave;
+			}
+		}
 		if (pbSignature == NULL)
 		{
 			// optimization
@@ -1488,13 +1465,34 @@ BOOL Container::SignHash(
 			fReturn = TRUE;
 			__leave;
 		}
-		if (!m_Card->GetPIN(m_dwCardContainerId, PIN_OPERATION_SIGN, &dwPinId))
+		DWORD dwHashSize = 0;
+		dwSize = sizeof(DWORD);
+		if (!CryptGetHashParam(hHash, HP_HASHSIZE, (PBYTE) &dwHashSize, &dwSize, 0))
+		{
+			dwError = GetLastError();
+			Trace(TRACE_LEVEL_ERROR, L"CryptGetHashParam failed 0x%08X", dwError);
+			__leave;
+		}
+		pbHash = (PBYTE) malloc(dwHashSize);
+		if (!pbHash)
+		{
+			dwError = ERROR_OUTOFMEMORY;
+			Trace(TRACE_LEVEL_ERROR, L"ERROR_OUTOFMEMORY");
+			__leave;
+		}
+		if (!CryptGetHashParam(hHash, HP_HASHVAL, pbHash, &dwHashSize, 0))
+		{
+			dwError = GetLastError();
+			Trace(TRACE_LEVEL_ERROR, L"CryptGetHashParam failed 0x%08X", dwError);
+			__leave;
+		}
+		if (!GetPIN(PIN_OPERATION_SIGN, &dwPinId))
 		{
 			dwError = GetLastError();
 			Trace(TRACE_LEVEL_ERROR, L"GetPIN failed 0x%08X", dwError);
 			__leave;
 		}
-		if (!AskPinToUserIfNeeded(dwPinId))
+		if (!AskPinToUserIfNeeded(GetParentHwnd(), dwPinId))
 		{
 			dwError = GetLastError();
 			Trace(TRACE_LEVEL_ERROR, L"StartTransaction failed 0x%08X", dwError);
@@ -1514,7 +1512,7 @@ BOOL Container::SignHash(
 			__leave;
 		}
 		fAuthenticated = TRUE;
-		if (!m_Card->SignHash(m_dwCardContainerId, hMyHash, dwFlags, pbSignature, pdwSigLen))
+		if (!SignData(szAlgorithm, pbHash, dwHashSize, pbSignature, pdwSigLen))
 		{
 			dwError = GetLastError();
 			Trace(TRACE_LEVEL_ERROR, L"SignHash failed 0x%08X", dwError);
@@ -1524,13 +1522,15 @@ BOOL Container::SignHash(
 	}
 	__finally
 	{
+		if (pbHash)
+			free(pbHash);
 		if (fEndTransaction)
 			EndTransaction(dwPinId, fAuthenticated);
 	}
 	SetLastError(dwError);
 	return fReturn;
 }
-BOOL Container::DestroyHash(
+BOOL CspContainer::DestroyHash(
 			        __in     HCRYPTHASH  hHash)
 {
 	DWORD dwError = 0;
@@ -1561,7 +1561,7 @@ BOOL Container::DestroyHash(
 	return fReturn;
 }
 
-BOOL Container::SetHashParam(
+BOOL CspContainer::SetHashParam(
 					__in     HCRYPTHASH  hHash,
 					__in    DWORD dwParam,
 					__in     CONST  BYTE *pbData,
@@ -1592,7 +1592,7 @@ BOOL Container::SetHashParam(
 	SetLastError(dwError);
 	return fReturn;
 }
-BOOL Container::GetHashParam(
+BOOL CspContainer::GetHashParam(
 					__in     HCRYPTHASH  hHash,
 					__in    DWORD dwParam,
 					_Out_writes_bytes_to_opt_(*pdwDataLen, *pdwDataLen)  LPBYTE  pbData,
@@ -1625,7 +1625,7 @@ BOOL Container::GetHashParam(
 	return fReturn;
 }
 
-BOOL Container::GenKey(
+BOOL CspContainer::GenKey(
 					__in     ALG_ID  Algid,
 					__in    DWORD  dwFlags,
 					__out   HCRYPTKEY  *phKey)
@@ -1670,13 +1670,13 @@ BOOL Container::GenKey(
 				Trace(TRACE_LEVEL_ERROR, L"GetKeyIdForNewKey failed 0x%08X", dwError);
 				__leave;
 			}
-			if (!m_Card->GetPIN(m_dwCardContainerId, PIN_OPERATION_CREATE, &dwPinId))
+			if (!GetPIN(PIN_OPERATION_CREATE, &dwPinId))
 			{
 				dwError = GetLastError();
 				Trace(TRACE_LEVEL_ERROR, L"GetPIN failed 0x%08X", dwError);
 				__leave;
 			}
-			if (!AskPinToUserIfNeeded(dwPinId))
+			if (!AskPinToUserIfNeeded(GetParentHwnd(), dwPinId))
 			{
 				dwError = GetLastError();
 				Trace(TRACE_LEVEL_ERROR, L"StartTransaction failed 0x%08X", dwError);
@@ -1772,7 +1772,7 @@ BOOL Container::GenKey(
 	return fReturn;
 }
 
-BOOL Container::DeriveKey(
+BOOL CspContainer::DeriveKey(
 					__in     ALG_ID  Algid,
 					__in     HCRYPTHASH  hHash,
 					__in    DWORD  dwFlags,
@@ -1818,7 +1818,7 @@ BOOL Container::DeriveKey(
 	return fReturn;
 }
 
-BOOL Container::DestroyKey(
+BOOL CspContainer::DestroyKey(
 					__in     HCRYPTKEY   hKey)
 {
 	DWORD dwError = 0;
@@ -1891,7 +1891,7 @@ ULONG ASN1Len(CONST BYTE * buf, bool withHeader = true)
       return data_length;
 }
 
-BOOL Container::SetKeyParam(
+BOOL CspContainer::SetKeyParam(
 					__in     HCRYPTKEY   hKey,
 					__in    DWORD dwParam,
 					__in     CONST  BYTE *pbData,
@@ -2006,7 +2006,7 @@ BOOL Container::SetKeyParam(
 	SetLastError(dwError);
 	return fReturn;
 }
-_Success_(return) BOOL Container::GetKeyParam(
+_Success_(return) BOOL CspContainer::GetKeyParam(
 					__in     HCRYPTKEY   hKey,
 					__in    DWORD dwParam,
 					_Out_writes_bytes_to_opt_(*pdwDataLen, *pdwDataLen) LPBYTE  pbData,
@@ -2064,7 +2064,7 @@ _Success_(return) BOOL Container::GetKeyParam(
 			*pdwDataLen = sizeof(DWORD);
 			if (pbData)
 			{
-				*((PDWORD)pbData) = (dwKeySpec == AT_KEYEXCHANGE ? CRYPT_DECRYPT : 0);	
+				*((PDWORD)pbData) = (dwKeySpec == AT_KEYEXCHANGE ? CRYPT_ENCRYPT|CRYPT_DECRYPT|CRYPT_MAC|CRYPT_READ : CRYPT_MAC|CRYPT_READ);	
 			}
 			fReturn = TRUE;
 			break;
@@ -2103,7 +2103,7 @@ _Success_(return) BOOL Container::GetKeyParam(
 	return fReturn;
 
 }
-BOOL Container::ExportKey(
+BOOL CspContainer::ExportKey(
 					__in     HCRYPTKEY   hKey,
 					__in     HCRYPTKEY  hPubKey,
 					__in    DWORD dwBlobType,
@@ -2153,7 +2153,7 @@ BOOL Container::ExportKey(
 	SetLastError(dwError);
 	return fReturn;
 }
-BOOL Container::ImportKey(
+BOOL CspContainer::ImportKey(
 					__in     CONST  BYTE *pbData,
 					__in    DWORD cbDataLen,
 					__in     HCRYPTKEY  hPubKey,
@@ -2226,13 +2226,13 @@ BOOL Container::ImportKey(
 					__leave;
 				}
 			}
-			if (!m_Card->GetPIN(m_dwCardContainerId, PIN_OPERATION_CREATE, &dwPinId))
+			if (!GetPIN(PIN_OPERATION_CREATE, &dwPinId))
 			{
 				dwError = GetLastError();
 				Trace(TRACE_LEVEL_ERROR, L"GetPIN failed 0x%08X", dwError);
 				__leave;
 			}
-			if (!AskPinToUserIfNeeded(dwPinId))
+			if (!AskPinToUserIfNeeded(GetParentHwnd(), dwPinId))
 			{
 				dwError = GetLastError();
 				Trace(TRACE_LEVEL_ERROR, L"StartTransaction failed 0x%08X", dwError);
@@ -2353,13 +2353,13 @@ BOOL Container::ImportKey(
 			memcpy(pbImportKeyBlob->rgbKeyData, pbSimpleBlob->encryptedkey, dwEncryptKeySize);
 			pbImportKeyBlob->dwKeySize = dwEncryptKeySize;
 			Trace(TRACE_LEVEL_VERBOSE, L"Kcz");
-			if (!m_Card->GetPIN(m_dwCardContainerId, PIN_OPERATION_DECRYPT, &dwPinId))
+			if (!GetPIN(PIN_OPERATION_DECRYPT, &dwPinId))
 			{
 				dwError = GetLastError();
 				Trace(TRACE_LEVEL_ERROR, L"GetPIN failed 0x%08X", dwError);
 				__leave;
 			}
-			if (!AskPinToUserIfNeeded(dwPinId))
+			if (!AskPinToUserIfNeeded(GetParentHwnd(), dwPinId))
 			{
 				dwError = GetLastError();
 				Trace(TRACE_LEVEL_ERROR, L"StartTransaction failed 0x%08X", dwError);
@@ -2379,7 +2379,7 @@ BOOL Container::ImportKey(
 				__leave;
 			}
 			fAuthenticated = TRUE;
-			if (!m_Card->Decrypt(m_dwCardContainerId, pbImportKeyBlob->rgbKeyData, &pbImportKeyBlob->dwKeySize))
+			if (!m_Card->Decrypt(m_dwCardContainerId, pbImportKeyBlob->rgbKeyData, pbImportKeyBlob->dwKeySize, pbImportKeyBlob->rgbKeyData, &pbImportKeyBlob->dwKeySize))
 			{
 				dwError = GetLastError();
 				Trace(TRACE_LEVEL_ERROR, L"CryptDecrypt failed 0x%08X", dwError);
@@ -2446,7 +2446,7 @@ BOOL Container::ImportKey(
 	SetLastError(dwError);
 	return fReturn;
 }
-BOOL Container::Encrypt(
+BOOL CspContainer::Encrypt(
 					__in     HCRYPTKEY   hKey,
 					__in     HCRYPTHASH  hHash,
 					__in     BOOL  fFinal,
@@ -2487,7 +2487,7 @@ BOOL Container::Encrypt(
 	SetLastError(dwError);
 	return fReturn;
 }
-BOOL Container::Decrypt(
+BOOL CspContainer::Decrypt(
 					__in     HCRYPTKEY   hKey,
 					__in     HCRYPTHASH  hHash,
 					__in     BOOL  fFinal,
@@ -2537,13 +2537,13 @@ BOOL Container::Decrypt(
 				Trace(TRACE_LEVEL_ERROR, L"NTE_BAD_FLAGS");
 				__leave;
 			}
-			if (!m_Card->GetPIN(m_dwCardContainerId, PIN_OPERATION_DECRYPT, &dwPinId))
+			if (!GetPIN(PIN_OPERATION_DECRYPT, &dwPinId))
 			{
 				dwError = GetLastError();
 				Trace(TRACE_LEVEL_ERROR, L"GetPIN failed 0x%08X", dwError);
 				__leave;
 			}
-			if (!AskPinToUserIfNeeded(dwPinId))
+			if (!AskPinToUserIfNeeded(GetParentHwnd(), dwPinId))
 			{
 				dwError = GetLastError();
 				Trace(TRACE_LEVEL_ERROR, L"StartTransaction failed 0x%08X", dwError);
@@ -2563,7 +2563,7 @@ BOOL Container::Decrypt(
 				__leave;
 			}
 			fAuthenticated = TRUE;
-			if (!m_Card->Decrypt(m_dwCardContainerId, pbData, pcbDataLen))
+			if (!m_Card->Decrypt(m_dwCardContainerId, pbData, *pcbDataLen, pbData, pcbDataLen))
 			{
 				dwError = GetLastError();
 				Trace(TRACE_LEVEL_ERROR, L"CryptDecrypt failed 0x%08X", dwError);
@@ -2598,7 +2598,7 @@ BOOL Container::Decrypt(
 	SetLastError(dwError);
 	return fReturn;
 }
-BOOL Container::VerifySignature(
+BOOL CspContainer::VerifySignature(
 					__in     HCRYPTHASH  hHash,
 					__in     CONST  BYTE *pbSignature,
 					__in    DWORD cbSigLen,
@@ -2639,7 +2639,7 @@ BOOL Container::VerifySignature(
 	return fReturn;
 }
 
-BOOL Container::GetUserKey(
+BOOL CspContainer::GetUserKey(
 					__in    DWORD  dwKeySpec,
 					__out   HCRYPTKEY  *phUserKey)
 {
@@ -2688,283 +2688,7 @@ BOOL Container::GetUserKey(
 	return fReturn;
 }
 
-////////////////////////////////////////////////////////////////////////////
-// PIN Operations / Authentication
-////////////////////////////////////////////////////////////////////////////
-
-
-
-BOOL Container::RemovePinInCache(__in DWORD dwPinId)
-{
-	std::list<CachedPin*>::const_iterator it (m_cachedPins.begin());
-	for(;it!=m_cachedPins.end();++it) 
-	{
-		if ((*it)->dwPinId == dwPinId && memcmp((*it)->Key,m_Key, KEY_SIZE) == 0)
-		{
-			CachedPin* cachedpin = *it;
-			SecureZeroMemory(cachedpin, sizeof(CachedPin));
-			m_cachedPins.erase(it);
-			delete cachedpin;
-			return TRUE;
-		}
-	}
-	SetLastError(ERROR_NOT_FOUND);
-	return FALSE;
-}
-
-BOOL CleanOpenPGPCardv2Data();
-BOOL Container::Clean()
-{
-	if (!CleanPinCache()) return FALSE;
-	if (!CleanProviders()) return FALSE;
-	if (!CleanOpenPGPCardv2Data()) return FALSE;
-	return TRUE;
-}
-
-BOOL Container::CleanPinCache()
-{
-	std::list<CachedPin*>::const_iterator it (m_cachedPins.begin());
-	while (it!=m_cachedPins.end()) 
-	{
-		SecureZeroMemory((*it)->encryptedPin, MAX_PIN_SIZE);
-		delete (*it);
-		it = m_cachedPins.erase(it);
-	}
-	return TRUE;
-}
-
-BOOL Container::GetPinInCache(__in DWORD dwPinId, __out_ecount(MAX_PIN_SIZE) PSTR szPin, __out PFILETIME Timestamp)
-{
-	szPin[0] = 0;
-	ZeroMemory(Timestamp, sizeof(FILETIME));
-	std::list<CachedPin*>::const_iterator it (m_cachedPins.begin());
-	for(;it!=m_cachedPins.end();++it) 
-	{
-		if ((*it)->dwPinId == dwPinId && memcmp((*it)->Key,m_Key, KEY_SIZE) == 0)
-		{
-			memcpy(szPin, (*it)->encryptedPin, MAX_PIN_SIZE);
-			RtlDecryptMemory(szPin, MAX_PIN_SIZE, 0);
-			memcpy(Timestamp, &((*it)->Timestamp), sizeof(FILETIME));
-			return TRUE;
-		}
-	}
-	SetLastError(ERROR_NOT_FOUND);
-	return FALSE;
-}
-
-BOOL Container::SetPinInCache(__in DWORD dwPinId, __in_ecount(MAX_PIN_SIZE) PSTR szPin)
-{
-	SYSTEMTIME Timestamp = {0};
-	GetSystemTime(&Timestamp);
-	std::list<CachedPin*>::const_iterator it (m_cachedPins.begin());
-	for(;it!=m_cachedPins.end();++it) 
-	{
-		if ((*it)->dwPinId == dwPinId && memcmp((*it)->Key,m_Key, KEY_SIZE) == 0)
-		{
-			memcpy((*it)->encryptedPin, szPin, MAX_PIN_SIZE);
-			RtlEncryptMemory((*it)->encryptedPin, MAX_PIN_SIZE, 0);
-			SystemTimeToFileTime(&Timestamp, &((*it)->Timestamp));
-			return TRUE;
-		}
-	}
-	CachedPin* pin = new CachedPin();
-	pin->dwPinId = dwPinId;
-	memcpy(pin->Key, m_Key, KEY_SIZE);
-	memcpy(pin->encryptedPin, szPin, MAX_PIN_SIZE);
-	RtlEncryptMemory(pin->encryptedPin, MAX_PIN_SIZE, 0);
-	SystemTimeToFileTime(&Timestamp, &(pin->Timestamp));
-	m_cachedPins.push_back(pin);
-	return TRUE;
-}
-
-BOOL Container::AskPinToUserIfNeeded(__in DWORD dwPinId)
-{
-	BOOL fReturn = FALSE;
-	DWORD dwError = 0;
-	FILETIME LastSet = {0};
-	CHAR szPin[MAX_PIN_SIZE];
-	FILETIME TimeStamp;
-	__try
-	{
-		if (m_VerifyContext)
-		{
-			dwError = NTE_FAIL;
-			Trace(TRACE_LEVEL_ERROR, L"m_VerifyContext is TRUE");
-			__leave;
-		}
-		if (!GetPinInCache(dwPinId, szPin, &TimeStamp))
-		{
-			if (!m_AllowUI)
-			{
-				dwError = NTE_SILENT_CONTEXT;
-				Trace(TRACE_LEVEL_ERROR, L"NTE_SILENT_CONTEXT");
-				__leave;
-			}
-			if (!m_Card->AskForPin(m_szPinPROMPT, dwPinId, szPin))
-			{
-				dwError = GetLastError();
-				Trace(TRACE_LEVEL_ERROR, L"AskForPin failed 0x%08X", dwError);
-				__leave;
-			}
-			if (!SetPinInCache(dwPinId, szPin))
-			{
-				dwError = GetLastError();
-				Trace(TRACE_LEVEL_ERROR, L"SetPinInCache failed 0x%08X", dwError);
-				__leave;
-			}
-		}
-		fReturn = TRUE;
-	}
-	__finally
-	{
-		SecureZeroMemory(szPin, sizeof(szPin));
-	}
-	SetLastError(dwError);
-	return fReturn;
-}
-
-BOOL Container::ChangePin()
-{
-	Trace(TRACE_LEVEL_VERBOSE, L"Enter");
-	//ChangePINDialog dialog;
-
-	//CHAR szBeforePIN[MAX_PIN_SIZE];
-	//CHAR szAfterPIN[MAX_PIN_SIZE];
-	//if (!m_AllowUI)
-	//{
-	//	Trace(TRACE_LEVEL_INFO, L"NTE_SILENT_CONTEXT");
-	//	SetLastError(NTE_SILENT_CONTEXT);
-	//	return FALSE;
-	//}
-	//if (dialog.Show() != IDOK)
-	//{
-	//	Trace(TRACE_LEVEL_INFO, L"Pin dialog cancelled");
-	//	SetLastError(ERROR_CANCELLED);
-	//	return FALSE;
-	//}
-	//dialog.GetBeforePIN(szBeforePIN);
-	//if (!Authenticate(0, szBeforePIN))
-	//{
-	//	Trace(TRACE_LEVEL_ERROR, L"SCARD_W_WRONG_CHV");
-	//	SetLastError(SCARD_W_WRONG_CHV);
-	//	return FALSE;
-	//}
-
-	//dialog.GetAfterPIN(szAfterPIN);
-	////TODO
-	BOOL fReturn = FALSE;
-	//DWORD dwError = GetLastError();
-	//if (fReturn) SetPinInCache(0, szAfterPIN);
-	//SecureZeroMemory(szAfterPIN, sizeof(szAfterPIN));
-	//SecureZeroMemory(szAfterPIN, sizeof(szBeforePIN));
-	//SetLastError(dwError);
-	return fReturn;
-}
-
-BOOL Container::SetPin(__in DWORD dwPinType, PSTR szPin)
-{
-	DWORD dwError = 0;
-	BOOL fReturn = FALSE;
-	DWORD dwOperation = 0;
-	DWORD dwPinId;
-	__try
-	{
-		switch (dwPinType)
-		{
-			case PP_ADMIN_PIN :
-				dwOperation = PIN_OPERATION_SET_ADMIN_PIN;
-				break;
-			case PP_KEYEXCHANGE_PIN:
-				dwOperation = PIN_OPERATION_SET_KEYEXCHANGE_PIN;
-				break;
-			case PP_SIGNATURE_PIN:
-				dwOperation = PIN_OPERATION_SET_SIGNATURE_PIN;
-				break;
-		}
-		if (!m_Card->GetPIN(m_dwCardContainerId, dwOperation, &dwPinId))
-		{
-			dwError = GetLastError();
-			Trace(TRACE_LEVEL_ERROR, L"RemovePinInCache failed 0x%08X", dwError);
-			__leave;
-		}
-		if (szPin)
-		{
-			if (strlen(szPin) +1 > MAX_PIN_SIZE)
-			{
-				dwError = NTE_BAD_FLAGS;
-				Trace(TRACE_LEVEL_ERROR, L"Pin too long %S", szPin);
-				__leave;
-			}
-			fReturn = SetPinInCache(dwPinId, szPin);
-			if (!fReturn)
-			{
-				dwError = GetLastError();
-				Trace(TRACE_LEVEL_ERROR, L"SetPinInCache failed 0x%08X", dwError);
-				__leave;
-			}
-		}
-		else
-		{
-			fReturn = RemovePinInCache(dwPinId);
-			if (!fReturn)
-			{
-				dwError = GetLastError();
-				Trace(TRACE_LEVEL_ERROR, L"RemovePinInCache failed 0x%08X", dwError);
-				__leave;
-			}
-		}
-	}
-	__finally
-	{
-	}
-	SetLastError(dwError);
-	return fReturn;
-}
-
-
-BOOL Container::Authenticate(__in DWORD dwPinId)
-{
-	BOOL fReturn = FALSE;
-	DWORD dwError = 0;
-	CHAR szPin[MAX_PIN_SIZE] = {0};
-	FILETIME Timestamp = {0};
-	DWORD dwAttemptRemaining = 0;
-	__try
-	{
-		if (m_VerifyContext)
-		{
-			dwError = NTE_FAIL;
-			Trace(TRACE_LEVEL_ERROR, L"m_VerifyContext is TRUE");
-			__leave;
-		}
-		if (!GetPinInCache(dwPinId, szPin, &Timestamp))
-		{
-			dwError = GetLastError();
-			Trace(TRACE_LEVEL_ERROR, L"GetPin failed 0x%08X", dwError);
-			__leave;
-		}
-		if (!m_Card->AuthenticatePIN(dwPinId, szPin, &dwAttemptRemaining))
-		{
-			dwError = GetLastError();
-			Trace(TRACE_LEVEL_ERROR, L"GetPin failed 0x%08X attempremaining=%d", dwError, dwAttemptRemaining);
-			if (!RemovePinInCache(dwPinId))
-			{
-				DWORD dwError2 = GetLastError();
-				Trace(TRACE_LEVEL_ERROR, L"RemovePinInCache failed 0x%08X", dwError2);
-			}
-			__leave;
-		}
-		fReturn = TRUE;
-	}
-	__finally
-	{
-		SecureZeroMemory(szPin, sizeof(szPin));
-	}
-	SetLastError(dwError);
-	return fReturn;
-}
-
-BOOL Container::SaveCertificate(__in_bcount(dwSize) PBYTE pbData, __in  DWORD dwSize, __in DWORD dwKeySpec)
+BOOL CspContainer::SaveCertificate(__in_bcount(dwSize) PBYTE pbData, __in  DWORD dwSize, __in DWORD dwKeySpec)
 {
 	DWORD dwError = 0;
 	BOOL fReturn = FALSE;
@@ -2978,7 +2702,7 @@ BOOL Container::SaveCertificate(__in_bcount(dwSize) PBYTE pbData, __in  DWORD dw
 	}
 	__try
 	{
-		if (!m_Card->GetPIN(m_dwCardContainerId, PIN_OPERATION_SAVE_CERT, &dwPinId))
+		if (!GetPIN(PIN_OPERATION_SAVE_CERT, &dwPinId))
 		{
 			dwError = GetLastError();
 			Trace(TRACE_LEVEL_ERROR, L"GetPIN failed 0x%08X", dwError);
@@ -3017,7 +2741,7 @@ BOOL Container::SaveCertificate(__in_bcount(dwSize) PBYTE pbData, __in  DWORD dw
 }
 
 
-BOOL Container::EnumerateContainer(_Out_writes_bytes_to_opt_(*pdwDataLen, *pdwDataLen) PSTR szContainer, __inout PDWORD pdwDataLen, DWORD dwFlags)
+BOOL CspContainer::EnumerateContainer(_Out_writes_bytes_to_opt_(*pdwDataLen, *pdwDataLen) PSTR szContainer, __inout PDWORD pdwDataLen, DWORD dwFlags)
 {
 	DWORD dwError = 0;
 	BOOL fReturn = FALSE;
@@ -3084,221 +2808,10 @@ BOOL Container::EnumerateContainer(_Out_writes_bytes_to_opt_(*pdwDataLen, *pdwDa
 	return fReturn;
 }
 
-////////////////////////////////////////////////////////////////////////////
-// store operations
-////////////////////////////////////////////////////////////////////////////
-
-
-BOOL Container::GetUserStore(__out HCERTSTORE* phStore)
+HWND CspContainer::GetParentHwnd()
 {
-	BOOL fReturn = FALSE;
-	DWORD dwError = 0;
-	HCERTSTORE hStore = NULL;
-	BOOL fEndTransaction = FALSE;
-	BOOL fAuthenticated = FALSE;
-	__try
-	{
-		if (!m_Card)
-		{
-			Trace(TRACE_LEVEL_ERROR, L"defensive programming for user store");
-			dwError = NTE_NOT_SUPPORTED;
-			__leave;
-		}
-		hStore = CertOpenStore(CERT_STORE_PROV_MEMORY,0,0,0,NULL);
-		if (!hStore)
-		{
-			dwError = GetLastError();
-			Trace(TRACE_LEVEL_ERROR, L"CertOpenStore failed 0x%08X", dwError);
-			__leave;
-		}
-		if (!StartTransaction())
-		{
-			dwError = GetLastError();
-			Trace(TRACE_LEVEL_ERROR, L"StartTransaction failed 0x%08X", dwError);
-			__leave;
-		}
-		fEndTransaction = TRUE;
-		DWORD dwMaxContainer = m_Card->GetMaxContainer();
-		for(DWORD dwI = 0; dwI < dwMaxContainer; dwI++)
-		{
-			CHAR szContainer[MAX_CONTAINER_NAME];
-			BYTE pbBuffer[4096];
-			DWORD dwSize = sizeof(pbBuffer);
-			DWORD dwKeySpec = AT_SIGNATURE;
-			if (m_Card->GetContainerName(dwI, szContainer)
-				&& m_Card->GetKeySpec(dwI, &dwKeySpec)
-				&& m_Card->GetCertificate(dwI, pbBuffer, &dwSize))
-			{
-				PopulateUserStoreFromContainerName(hStore, szContainer, dwKeySpec, pbBuffer, dwSize);
-			}
-		}
-		*phStore = hStore;
-		fReturn = TRUE;
-	}
-	__finally
-	{
-		if (!fReturn)
-		{
-			if (hStore) 
-				CertCloseStore(hStore, 0);
-		}
-		if (fEndTransaction)
-			EndTransaction(0, fAuthenticated);
-	}
-	SetLastError(dwError);
-	return fReturn;
+	HWND hWndParent = 0;
+	GetHWND(&hWndParent);
+	return hWndParent;
 }
 
-BOOL Container::PopulateUserStoreFromContainerName(__in HCERTSTORE hStore, __in PSTR szContainer, __in DWORD dwKeySpec, __in PBYTE pbData, __in DWORD dwSize)
-{
-	BOOL fReturn = FALSE;
-	DWORD dwError = 0;
-	PCCERT_CONTEXT pCertContext = NULL;
-	CRYPT_KEY_PROV_INFO propInfo;
-	WCHAR szWideContainerName[MAX_CONTAINER_NAME];
-	__try
-	{
-		pCertContext = CertCreateCertificateContext(X509_ASN_ENCODING,	pbData, dwSize);
-		if (!pCertContext)
-		{
-			dwError = GetLastError();
-			Trace(TRACE_LEVEL_ERROR, L"CertCreateCertificateContext failed 0x%08X", dwError);
-			__leave;
-		}
-		MultiByteToWideChar(CP_ACP, 0, szContainer, -1, szWideContainerName, MAX_CONTAINER_NAME);
-		ZeroMemory(&propInfo,sizeof(propInfo));
-		propInfo.pwszContainerName = szWideContainerName;
-		propInfo.pwszProvName = TEXT(CSPNAME);
-		propInfo.dwProvType = PROV_RSA_FULL;
-		propInfo.dwFlags = 0;
-		propInfo.cProvParam = 0;
-		propInfo.rgProvParam = 0;
-		propInfo.dwKeySpec = dwKeySpec;
-		if (!CertSetCertificateContextProperty(pCertContext,CERT_KEY_PROV_INFO_PROP_ID,
-			0,&propInfo))
-		{
-			dwError = GetLastError();
-			Trace(TRACE_LEVEL_ERROR, L"CertSetCertificateContextProperty failed 0x%08X", dwError);
-			__leave;
-		}
-		if (!CertAddCertificateContextToStore(hStore,pCertContext, CERT_STORE_ADD_ALWAYS,NULL))
-		{
-			dwError = GetLastError();
-			Trace(TRACE_LEVEL_ERROR, L"CertAddCertificateContextToStore failed 0x%08X", dwError);
-			__leave;
-		}
-		Trace(TRACE_LEVEL_INFO, L"added one certificate for container %S", szContainer);
-		fReturn = TRUE;
-	}
-	__finally
-	{
-		if (pCertContext) 
-			CertFreeCertificateContext(pCertContext);
-	}
-	SetLastError(dwError);
-	return fReturn;
-}
-
-BOOL Container::LoadCertificate(_Out_writes_bytes_to_opt_(*pdwSize, *pdwSize) PBYTE pbData, __inout PDWORD pdwSize)
-{
-	DWORD dwError = 0;
-	BOOL fReturn = FALSE;
-	BOOL fEndTransaction = FALSE;
-	BOOL fAuthenticated = FALSE;
-	__try
-	{
-		if (!m_Card)
-		{
-			Trace(TRACE_LEVEL_ERROR, L"Card is not initialized");
-			__leave;
-		}
-		if (!StartTransaction())
-		{
-			dwError = GetLastError();
-			Trace(TRACE_LEVEL_ERROR, L"StartTransaction failed 0x%08X", dwError);
-			__leave;
-		}
-		fEndTransaction = TRUE;
-		if (!m_Card->GetCertificate(m_dwCardContainerId, pbData, pdwSize))
-		{
-			dwError = GetLastError();
-			Trace(TRACE_LEVEL_ERROR, L"GetCertificate failed 0x%08X", dwError);
-			__leave;
-		}
-		fReturn = TRUE;
-	}
-	__finally
-	{
-		if (fEndTransaction)
-			EndTransaction(0, fAuthenticated);
-	}
-	SetLastError(dwError);
-	return fReturn;
-}
-
-
-BOOL Container::StartTransaction()
-{
-	BOOL fReturn = FALSE;
-	DWORD dwError = 0;
-	__try
-	{
-		Trace(TRACE_LEVEL_VERBOSE, L"SCardBeginTransaction 0x%Ix", m_hCard);
-#ifndef NO_TRANSACTION
-		dwError = SCardBeginTransaction(m_hCard);
-#endif
-		if (dwError)
-		{
-			Trace(TRACE_LEVEL_ERROR, L"SCardBeginTransaction failed 0x%08X", dwError);
-			__leave;
-		}
-		fReturn = TRUE;
-	}
-	__finally
-	{
-	}
-	SetLastError(dwError);
-	return fReturn;
-}
-
-BOOL Container::EndTransaction(DWORD dwPinId, BOOL fAuthenticated)
-{
-	BOOL fReturn = FALSE;
-	DWORD dwError = 0;
-	BOOL fReset = FALSE;
-	__try
-	{
-		if (!m_hCard)
-		{
-			fReturn = TRUE;
-			__leave;
-		}
-		if (dwPinId != (DWORD) -1 && m_Card != NULL && fAuthenticated)
-		{
-			fReset = !(m_Card->Deauthenticate(dwPinId));
-			if (fReset)
-			{
-				Trace(TRACE_LEVEL_INFO, L"Card reset programmed - deauthentication failed");
-			}
-		}
-		Trace(TRACE_LEVEL_VERBOSE, L"SCardEndTransaction 0x%Ix with reset %s", m_hCard, (fReset?L"TRUE": L"FALSE"));
-#ifndef NO_TRANSACTION
-		dwError = SCardEndTransaction(m_hCard, (fReset ? SCARD_RESET_CARD : SCARD_LEAVE_CARD));
-#endif
-		if (dwError)
-		{
-			Trace(TRACE_LEVEL_ERROR, L"SCardEndTransaction failed 0x%08X", dwError);
-			__leave;
-		}
-		if (fReset)
-		{
-			m_Card->Reinit();
-		}
-		fReturn = TRUE;
-	}
-	__finally
-	{
-	}
-	SetLastError(dwError);
-	return fReturn;
-}

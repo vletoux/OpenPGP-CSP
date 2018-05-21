@@ -28,19 +28,20 @@ public:
 	//virtual BOOL GetPublicKey(__in DWORD dwKeyId, _Out_writes_bytes_to_opt_(*pdwSize, *pdwSize) PBYTE* ppbPubKey, __out PDWORD pdwSize);
 	//virtual DWORD GetMaxContainer() {return OPENPGPKEYMAX;}
 	virtual BOOL GetCertificate(__in DWORD dwKeyId, _Out_writes_bytes_to_opt_(*pdwSize, *pdwSize) PBYTE pbData, __out PDWORD pdwSize);
-	virtual BOOL SignHash(__in DWORD dwKeyId, __in     HCRYPTHASH  hHash, __in    DWORD  dwFlags,
+	virtual BOOL SignData(__in DWORD dwKeyId,__in PCWSTR szAlgorithm, __in PBYTE pbHashValue, __in DWORD cbHashValue,
 					_Out_writes_bytes_to_(*pdwSigLen, *pdwSigLen) BYTE *pbSignature,
-					_Inout_  DWORD       *pdwSigLen);
+					_Inout_  DWORD *pdwSigLen);
 	virtual BOOL Decrypt(__in DWORD dwKeyId,
-					_Inout_updates_bytes_to_(*pdwDataLen, *pdwDataLen) BYTE *pbData,
-					 _Inout_ DWORD       *pdwDataLen);
+					 __in PBYTE pbEncryptedData, __in DWORD cbEncryptedData,
+					_Out_writes_bytes_to_(*pcbDecryptedData, *pcbDecryptedData) BYTE *pbDecryptedData,
+					_Inout_  DWORD *pcbDecryptedData);
 	//virtual BOOL GetPIN(__in DWORD dwKeyId, __in DWORD dwOperationId, __out PDWORD dwPinId);
 	//virtual BOOL AuthenticatePIN(__in DWORD dwPinId,__in PSTR szPin, __out PDWORD pdwRemainingAttempt);
 	virtual BOOL Deauthenticate(__in DWORD dwPinId);
 	//virtual DWORD Reinit();
 	//virtual BOOL GenerateKey(__in ALG_ID Algid, __in DWORD dwKeyId, __in DWORD dwBitLen);
 	virtual BOOL GetKeyIdForNewKey(__in ALG_ID Algid, __out PDWORD dwKeyId);
-	//virtual BOOL AskForPin(__in PWSTR szPinPROMPT, __in DWORD dwPinId, __out_ecount(MAX_PIN_SIZE) PSTR szPin);
+	//virtual BOOL AskForPin(__in HWND hWndParent, __in PWSTR szPinPROMPT, __in DWORD dwPinId, __out_ecount(MAX_PIN_SIZE) PSTR szPin);
 	virtual BOOL SaveCertificate(__in DWORD dwKey, __in_bcount(dwSize) PBYTE pbData, __in DWORD dwSize, __in DWORD dwKeySpec);
 private:
 	static OpenPGPCardv3* AllocateCard() { return new OpenPGPCardv3();}

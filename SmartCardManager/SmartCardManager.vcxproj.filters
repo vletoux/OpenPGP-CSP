@@ -36,6 +36,9 @@
     <ClInclude Include="RegistrationOfTag.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="resource_de.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SmartCardManager.bmp">
@@ -58,6 +61,9 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="OpenPGPSmartCardManager.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+    <ResourceCompile Include="OpenPGPSmartCardManager-DE.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>

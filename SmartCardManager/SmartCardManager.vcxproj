@@ -164,9 +164,11 @@
     <ClInclude Include="global.h" />
     <ClInclude Include="RegistrationOfTag.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="resource_de.h" />
     <ClInclude Include="Tracing.h" />
   </ItemGroup>
   <ItemGroup>
+    <ResourceCompile Include="OpenPGPSmartCardManager-DE.rc" />
     <ResourceCompile Include="OpenPGPSmartCardManager.rc" />
   </ItemGroup>
   <ItemGroup>

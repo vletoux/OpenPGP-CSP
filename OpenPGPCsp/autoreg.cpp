@@ -27,8 +27,6 @@ Notes:
 
 #include "stdafx.h"
 
-#define SCARD_CSP
-
 static HMODULE
 GetInstanceHandle(
     void);
@@ -54,6 +52,9 @@ static const BYTE
 static const TCHAR
     l_szProviderName[]
         = TEXT(CSPNAME);
+static const TCHAR
+    l_szKSPProviderName[]
+        = TEXT(KSPNAME);
 static const DWORD
     l_dwCspType
         = PROV_RSA_FULL;
@@ -80,7 +81,7 @@ Author:
 --*/
 
 STDAPI
-DllUnregisterServer(
+UnRegisterCsp(
     void)
 {
     LONG nStatus;
@@ -170,7 +171,7 @@ Author:
 --*/
 
 STDAPI
-DllRegisterServer(
+RegisterCsp(
     void)
 {
     TCHAR szModulePath[MAX_PATH];
@@ -178,8 +179,7 @@ DllRegisterServer(
     HINSTANCE hThisDll;
     DWORD dwStatus;
     LONG nStatus;
-	DWORD dwIndex;
-    DWORD dwDisp;
+	DWORD dwDisp;
     HRESULT hReturnStatus = NO_ERROR;
     HKEY hProviders = NULL;
     HKEY hMyCsp = NULL;
@@ -188,6 +188,7 @@ DllRegisterServer(
     BOOL fSignatureFound = FALSE;
     HANDLE hSigFile = INVALID_HANDLE_VALUE;
 #ifdef SCARD_CSP
+    DWORD dwIndex;
     BOOL fCardIntroduced = FALSE;
     SCARDCONTEXT hCtx = NULL;
 #endif
@@ -351,6 +352,19 @@ DllRegisterServer(
                         hReturnStatus = (HRESULT)dwStatus;
                     goto ErrorExit;
                 }
+				dwStatus = SCardSetCardTypeProviderName(
+                                NULL,
+                                l_szCardName,
+                                SCARD_PROVIDER_KSP,
+                                l_szKSPProviderName);
+                if (ERROR_SUCCESS != dwStatus)
+                {
+                    if (0 == (dwStatus & 0xffff0000))
+                        hReturnStatus = HRESULT_FROM_WIN32(dwStatus);
+                    else
+                        hReturnStatus = (HRESULT)dwStatus;
+                    goto ErrorExit;
+                }
                 fCardIntroduced = TRUE;
                 break;
             }
@@ -425,6 +439,19 @@ DllRegisterServer(
                 goto ErrorExit;
             }
             nStatus = RegSetValueEx(
+                            hVendor,
+                            TEXT("Crypto Provider"),
+                            0,
+                            REG_SZ,
+                            (LPBYTE)l_szProviderName,
+                            (DWORD)((_tcslen(l_szProviderName) + 1) * sizeof(TCHAR)));
+            if (ERROR_SUCCESS != nStatus)
+            {
+                hReturnStatus = HRESULT_FROM_WIN32(nStatus);
+                goto ErrorExit;
+            }
+
+			nStatus = RegSetValueEx(
                             hVendor,
                             TEXT("Crypto Provider"),
                             0,
@@ -583,7 +610,7 @@ DllRegisterServer(
         RegCloseKey(hMyCsp);
     if (NULL != hProviders)
         RegCloseKey(hProviders);
-    DllUnregisterServer();
+    UnRegisterCsp();
     return hReturnStatus;
 }
 
@@ -623,3 +650,215 @@ GetInstanceHandle(
 #endif
 }
 
+
+//
+// An array of algorithm names, all belonging to the
+// same algorithm class...
+//
+PWSTR AlgorithmNames[1] = {
+    NCRYPT_KEY_STORAGE_ALGORITHM
+};
+
+//
+// Definition of ONE class of algorithms supported
+// by the provider...
+//
+CRYPT_INTERFACE_REG AlgorithmClass = {
+    NCRYPT_KEY_STORAGE_INTERFACE,       // ncrypt key storage interface
+    CRYPT_LOCAL,                        // Scope: local system only
+    1,                                  // One algorithm in the class
+    AlgorithmNames                      // The name(s) of the algorithm(s) in the class
+};
+
+//
+// An array of ALL the algorithm classes supported
+// by the provider...
+//
+PCRYPT_INTERFACE_REG AlgorithmClasses[1] = {
+    &AlgorithmClass
+};
+
+//
+// Definition of the provider's user-mode binary...
+//
+CRYPT_IMAGE_REG SampleKspImage = {
+    L"OpenPGPCsp.dll",                   // File name of the sample KSP binary
+	1,                                  // Number of algorithm classes the binary supports
+    AlgorithmClasses                    // List of all algorithm classes available
+};
+
+//
+// Definition of the overall provider...
+//
+CRYPT_PROVIDER_REG KSPProvider = {
+    0,
+    NULL,
+    &SampleKspImage,  // Image that provides user-mode support
+    NULL              // Image that provides kernel-mode support (*MUST* be NULL)
+};
+///////////////////////////////////////////////////////////////////////////////
+
+HRESULT
+RegisterKsp(
+    void
+    )
+{
+    NTSTATUS ntStatus = 0;
+
+    //
+    // Make CNG aware that our provider
+    // exists...
+    //
+	ntStatus = BCryptRegisterProvider(
+                    TEXT(KSPNAME),
+                    CRYPT_OVERWRITE,                          // Flags: fail if provider is already registered
+                    &KSPProvider
+                    );
+    if (!BCRYPT_SUCCESS(ntStatus))
+    {
+        wprintf(L"BCryptRegisterProvider failed with error code 0x%08x\n", ntStatus);
+    }
+
+    //
+    // Add the algorithm name to the priority list of the
+    // symmetric cipher algorithm class. (This makes it
+    // visible to BCryptResolveProviders.)
+    //
+#pragma warning(suppress: 6387)
+    ntStatus = BCryptAddContextFunction(
+                    CRYPT_LOCAL,                    // Scope: local machine only
+                    NULL,                           // Application context: default
+                    NCRYPT_KEY_STORAGE_INTERFACE,   // Algorithm class
+                    NCRYPT_KEY_STORAGE_ALGORITHM,   // Algorithm name
+                    CRYPT_PRIORITY_BOTTOM           // Lowest priority
+                    );
+    if ( !BCRYPT_SUCCESS(ntStatus))
+    {
+        wprintf(L"BCryptAddContextFunction failed with error code 0x%08x\n", ntStatus);
+    }
+
+    //
+    // Identify our new provider as someone who exposes
+    // an implementation of the new algorithm.
+    //
+#pragma warning(suppress: 6387)
+    ntStatus = BCryptAddContextFunctionProvider(
+                    CRYPT_LOCAL,                    // Scope: local machine only
+                    NULL,                           // Application context: default
+                    NCRYPT_KEY_STORAGE_INTERFACE,   // Algorithm class
+                    NCRYPT_KEY_STORAGE_ALGORITHM,   // Algorithm name
+                    TEXT(KSPNAME),        // Provider name
+                    CRYPT_PRIORITY_BOTTOM           // Lowest priority
+                    );
+    if ( !BCRYPT_SUCCESS(ntStatus))
+    {
+        wprintf(L"BCryptAddContextFunctionProvider failed with error code 0x%08x\n", ntStatus);
+    }
+	return HRESULT_FROM_NT(ntStatus);
+}
+///////////////////////////////////////////////////////////////////////////////
+
+HRESULT
+UnRegisterKsp()
+{
+    NTSTATUS ntStatus = 0;
+
+    //
+    // Tell CNG that this provider no longer supports
+    // this algorithm.
+    //
+#pragma warning(suppress: 6387)
+    ntStatus = BCryptRemoveContextFunctionProvider(
+                    CRYPT_LOCAL,                    // Scope: local machine only
+                    NULL,                           // Application context: default
+                    NCRYPT_KEY_STORAGE_INTERFACE,   // Algorithm class
+                    NCRYPT_KEY_STORAGE_ALGORITHM,   // Algorithm name
+                    TEXT(KSPNAME)         // Provider
+                    );
+    if (!BCRYPT_SUCCESS(ntStatus))
+    {
+        wprintf(L"BCryptRemoveContextFunctionProvider failed with error code 0x%08x\n", ntStatus);
+    }
+
+
+    //
+    // Tell CNG to forget about our provider component.
+    //
+    ntStatus = BCryptUnregisterProvider(TEXT(KSPNAME));
+    if (!BCRYPT_SUCCESS(ntStatus))
+    {
+        wprintf(L"BCryptUnregisterProvider failed with error code 0x%08x\n", ntStatus);
+    }
+	return HRESULT_FROM_NT(ntStatus);
+}
+///////////////////////////////////////////////////////////////////////////////
+
+
+
+
+/*++
+
+DllUnregisterServer:
+
+    This service removes the registry entries associated with this CSP.
+
+Arguments:
+
+    None
+
+Return Value:
+
+    Status code as an HRESULT.
+
+Author:
+
+    Doug Barlow (dbarlow) 3/11/1998
+
+--*/
+
+STDAPI
+DllUnregisterServer(
+    void)
+{
+	HRESULT hr = UnRegisterCsp();
+	if (FAILED(hr))
+	{
+		return hr;
+	}
+	hr = UnRegisterKsp();
+	return hr;
+}
+
+
+/*++
+
+DllRegisterServer:
+
+    This function installs the proper registry entries to enable this CSP.
+
+Arguments:
+
+    None
+
+Return Value:
+
+    Status code as an HRESULT.
+
+Author:
+
+    Doug Barlow (dbarlow) 3/11/1998
+
+--*/
+
+STDAPI
+DllRegisterServer(
+    void)
+{
+	HRESULT hr = RegisterCsp();
+	if (FAILED(hr))
+	{
+		return hr;
+	}
+	hr = RegisterKsp();
+	return hr;
+}

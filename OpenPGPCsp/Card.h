@@ -38,12 +38,13 @@ class Card
 		virtual BOOL GetContainerName(__in DWORD dwKeyId, __out_ecount(MAX_CONTAINER_NAME) PSTR szContainer) = 0;
 		virtual DWORD GetMaxContainer() = 0;
 		virtual BOOL GetCertificate(__in DWORD dwKeyId, _Out_writes_bytes_to_opt_(*pdwSize, *pdwSize) PBYTE pbData, __out PDWORD pdwSize) = 0;
-		virtual BOOL SignHash(__in DWORD dwKeyId, __in     HCRYPTHASH  hHash, __in    DWORD  dwFlags,
+		virtual BOOL SignData(__in DWORD dwKeyId,__in PCWSTR szAlgorithm, __in PBYTE pbHashValue, __in DWORD cbHashValue,
 					_Out_writes_bytes_to_(*pdwSigLen, *pdwSigLen) BYTE *pbSignature,
-					_Inout_  DWORD       *pdwSigLen) = 0;
+					_Inout_  DWORD *pdwSigLen) = 0;
 		virtual BOOL Decrypt(__in DWORD dwKeyId,
-					_Inout_updates_bytes_to_(*pdwDataLen, *pdwDataLen) BYTE *pbData,
-					 _Inout_ DWORD       *pdwDataLen) = 0;
+					 __in PBYTE pbEncryptedData, __in DWORD cbEncryptedData,
+					_Out_writes_bytes_to_(*pcbDecryptedData, *pcbDecryptedData) BYTE *pbDecryptedData,
+					_Inout_  DWORD *pcbDecryptedData) = 0;
 		// called out of a transaction
 		virtual BOOL GetPIN(__in DWORD dwKeyId, __in DWORD dwOperationId, __out PDWORD dwPinId) = 0;
 		virtual BOOL AuthenticatePIN(__in DWORD dwPinId,__in PSTR szPin, __out PDWORD pdwRemainingAttempt) = 0;
@@ -52,7 +53,7 @@ class Card
 		virtual BOOL GenerateKey(__in ALG_ID Algid, __in DWORD dwKeyId, __in DWORD dwBitLen) = 0;
 		// called out of a transaction
 		virtual BOOL GetKeyIdForNewKey(__in ALG_ID Algid, __out PDWORD dwKeyId) = 0;
-		virtual BOOL AskForPin(__in PWSTR szPinPROMPT, __in DWORD dwPinId, __out_ecount(MAX_PIN_SIZE) PSTR szPin) = 0;
+		virtual BOOL AskForPin(__in HWND hWndParent, __in PWSTR szPinPROMPT, __in DWORD dwPinId, __out_ecount(MAX_PIN_SIZE) PSTR szPin) = 0;
 		virtual BOOL SaveCertificate(__in DWORD dwKey, __in_bcount(dwSize) PBYTE pbData, __in DWORD dwSize, __in DWORD dwKeySpec) = 0;
 		virtual BOOL RemoveKey(__in DWORD dwKey) = 0;
 		virtual BOOL SaveKey(__in DWORD dwKey, __in ALG_ID Algid, __in_bcount(dwKeySize) PBYTE pBlob, __in DWORD dwKeySize) = 0;
