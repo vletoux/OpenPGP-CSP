@@ -301,15 +301,15 @@ INT_PTR CALLBACK WndProcAddTag(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 
 
 
-BOOL ProposeToRegisterTheCard(HWND hWnd, PTSTR szReader, __in_bcount(dwAtrSize) PBYTE pbAtr, DWORD dwAtrSize)
+BOOL ProposeToRegisterTheCard(HWND hWnd, PTSTR szInputReader, __in_bcount(dwAtrSize) PBYTE pbAtr, DWORD dwAtrSize)
 {
 	pbDialogATR = pbAtr;
 	dwDialogATRSize = dwAtrSize;
-	szDialogReader = szReader;
+	szDialogReader = szInputReader;
 	return DialogBox(hInst, MAKEINTRESOURCE(IDD_ADDTAG),hWnd, WndProcAddTag) == IDOK;
 }
 
-BOOL CheckIfTheCardCanBeUsedButIsNotRegistered(HWND hWnd, PTSTR szReader, SCARDCONTEXT hSC)
+BOOL CheckIfTheCardCanBeUsedButIsNotRegistered(HWND hWnd, PTSTR szInputReader, SCARDCONTEXT hSC)
 {
 	BOOL fShouldTheWizardContinue = FALSE;
 	LONG lReturn = 0;
@@ -334,7 +334,7 @@ BOOL CheckIfTheCardCanBeUsedButIsNotRegistered(HWND hWnd, PTSTR szReader, SCARDC
 	DWORD dwBufferSize = ARRAYSIZE(pbBuffer);
 	__try
 	{
-		lReturn = SCardConnect(hSC, szReader, SCARD_SHARE_SHARED, SCARD_PROTOCOL_Tx, &hCard, &dwProtocol);
+		lReturn = SCardConnect(hSC, szInputReader, SCARD_SHARE_SHARED, SCARD_PROTOCOL_Tx, &hCard, &dwProtocol);
 		if ( SCARD_S_SUCCESS != lReturn )
 		{
 			Trace(TRACE_LEVEL_ERROR,L"Failed SCardConnect 0x%08X",lReturn);
@@ -397,7 +397,7 @@ BOOL CheckIfTheCardCanBeUsedButIsNotRegistered(HWND hWnd, PTSTR szReader, SCARDC
 			__leave;
 		}
 		// found an unknown smart card which has an ID
-		fShouldTheWizardContinue = ProposeToRegisterTheCard(hWnd, szReader, pbAtr, dwAtrSize);
+		fShouldTheWizardContinue = ProposeToRegisterTheCard(hWnd, szInputReader, pbAtr, dwAtrSize);
 	}
 	__finally
 	{

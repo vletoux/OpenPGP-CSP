@@ -185,7 +185,7 @@ BOOL IsCurrentUserBelongToADomain()
 	return fReturn;
 }
 
-BOOL AskForCard(HWND hWnd, LPWSTR szReader, DWORD ReaderLength,LPWSTR szCard,DWORD CardLength)
+BOOL AskForCard(HWND hWnd, LPWSTR szInputReader, DWORD ReaderLength,LPWSTR szInputCard,DWORD CardLength)
 {
 	SCARDCONTEXT     hSC = NULL;
 	OPENCARDNAME_EX  dlgStruct;
@@ -214,9 +214,9 @@ BOOL AskForCard(HWND hWnd, LPWSTR szReader, DWORD ReaderLength,LPWSTR szCard,DWO
 		dlgStruct.hSCardContext = hSC;
 		dlgStruct.hwndOwner = hWnd;
 		dlgStruct.dwFlags = SC_DLG_MINIMAL_UI;
-		dlgStruct.lpstrRdr = szReader;
+		dlgStruct.lpstrRdr = szInputReader;
 		dlgStruct.nMaxRdr = ReaderLength;
-		dlgStruct.lpstrCard = szCard;
+		dlgStruct.lpstrCard = szInputCard;
 		dlgStruct.nMaxCard = CardLength;
 		dlgStruct.pOpenCardSearchCriteria = &searchCriteria;
 		searchCriteria.dwStructSize = sizeof(searchCriteria);
@@ -228,8 +228,8 @@ BOOL AskForCard(HWND hWnd, LPWSTR szReader, DWORD ReaderLength,LPWSTR szCard,DWO
 		if ( SCARD_S_SUCCESS != lReturn )
 		{
 			Trace(TRACE_LEVEL_ERROR,L"Failed SCardUIDlgSelectCard 0x%08X",lReturn);
-			szReader[0]=0;
-			szCard[0]=0;
+			szInputReader[0]=0;
+			szInputCard[0]=0;
 			__leave;
 		}
 		fReturn = TRUE;
@@ -291,7 +291,7 @@ VOID AddCertificate(PBYTE pbData, DWORD dwSize, int itemNum, HWND hWnd)
 	}
 }
 
-BOOL GetProvider(__inout_ecount(256) PTSTR szProvider, __in PTSTR szCard)
+BOOL GetProvider(__inout_ecount(256) PTSTR szInputProvider, __in PTSTR szInputCard)
 {
 	BOOL fReturn = FALSE;
 	SCARDCONTEXT hSCardContext = NULL;
@@ -307,9 +307,9 @@ BOOL GetProvider(__inout_ecount(256) PTSTR szProvider, __in PTSTR szCard)
 		}
 	
 		lCardStatus = SCardGetCardTypeProviderName(hSCardContext,
-											szCard,
+											szInputCard,
 											SCARD_PROVIDER_CSP,
-											szProvider,
+											szInputProvider,
 											&dwProviderNameLen);
 		if (SCARD_S_SUCCESS != lCardStatus)
 		{
@@ -606,7 +606,10 @@ VOID IntializeListView(HWND hWndListView)
     ImageList_SetBkColor(hLarge, GetSysColor(COLOR_WINDOW));
 	ImageList_SetBkColor(hSmall, GetSysColor(COLOR_WINDOW));
 	// 0 = error icon
+#pragma warning(push)
+#pragma warning(disable:4302)
 	hiconItem = LoadIcon(NULL,MAKEINTRESOURCE( IDI_ERROR));
+#pragma warning(pop)
 	ImageList_AddIcon(hLarge, hiconItem); 
 	ImageList_AddIcon(hSmall, hiconItem); 
 	DestroyIcon(hiconItem); 
@@ -622,7 +625,11 @@ VOID IntializeListView(HWND hWndListView)
 		DestroyIcon(hIcon ); 
 		FreeLibrary(hDll);
 	}
-	hiconItem = LoadIcon(NULL,MAKEINTRESOURCE( IDI_INFORMATION));
+#pragma warning(push)
+#pragma warning(disable:4302)
+	hiconItem = LoadIcon(NULL, MAKEINTRESOURCE(IDI_INFORMATION));
+#pragma warning(pop)
+
 	ImageList_AddIcon(hLarge, hiconItem); 
 	ImageList_AddIcon(hSmall, hiconItem); 
 	DestroyIcon(hiconItem); 

@@ -101,7 +101,7 @@ ULONG WINAPI ControlCallback(
 					g_bTracingEnabled = TRUE;
 #ifdef _DEBUG
 					TCHAR szMessage[256];
-					_stprintf_s(szMessage, TEXT("Provider %d activated with level %d (handle=0x%X)\r\n"),i,g_EnableLevel[i], TempSessionHandle);
+					_stprintf_s(szMessage, TEXT("Provider %d activated with level %d (handle=0x%IX)\r\n"),i,g_EnableLevel[i], TempSessionHandle);
 					OutputDebugString(szMessage);
 #endif
 					break;

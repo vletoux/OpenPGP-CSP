@@ -128,7 +128,11 @@ HRESULT Enroll(HWND hWnd)
 				Trace(TRACE_LEVEL_ERROR, L"put_Length failed 0x%08X",hr);
 				__leave;
 			}
+#pragma warning(push)
+#pragma warning(disable:4311)
+#pragma warning(disable:4302)
 			hr = pPrivateKey->put_ParentWindow((LONG)hWnd);
+#pragma warning(pop)
 			if (FAILED(hr))
 			{
 				Trace(TRACE_LEVEL_ERROR, L"put_ParentWindow failed 0x%08X",hr);

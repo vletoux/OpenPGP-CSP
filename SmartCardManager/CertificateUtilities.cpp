@@ -97,7 +97,7 @@ _Ret_maybenull_ PBYTE AllocateAndEncodeObject(LPVOID pvStruct, LPCSTR lpszStruct
    return pbEncodedObject;
 }
 
-BOOL CreateSelfSignCertificate(PTSTR szReader, PTSTR szSubject, BOOL fKeyExchange)
+BOOL CreateSelfSignCertificate(PTSTR szInputReader, PTSTR szSubject, BOOL fKeyExchange)
 {
 	BOOL fReturn = FALSE;
 	TCHAR szContainerName[256];
@@ -132,7 +132,7 @@ BOOL CreateSelfSignCertificate(PTSTR szReader, PTSTR szSubject, BOOL fKeyExchang
 		// validation time : 10 years
 		EndTime.wYear += 10;
 
-		_stprintf_s(szContainerName,ARRAYSIZE(szContainerName), _T("\\\\.\\%s\\"), szReader);
+		_stprintf_s(szContainerName,ARRAYSIZE(szContainerName), _T("\\\\.\\%s\\"), szInputReader);
 
 		// create container
 		if (!CryptAcquireContext(
