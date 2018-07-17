@@ -1410,7 +1410,7 @@ BOOL CspContainer::SignHash(
 		}
 		ALG_ID AlgId = 0;
 		DWORD dwSize = sizeof(ALG_ID);
-		if (!CryptGetHashParam(hHash, HP_ALGID, (PBYTE) &AlgId, &dwSize, 0))
+		if (!CryptGetHashParam(hMyHash, HP_ALGID, (PBYTE) &AlgId, &dwSize, 0))
 		{
 			dwError = GetLastError();
 			Trace(TRACE_LEVEL_ERROR, L"CryptGetHashParam failed 0x%08X", dwError);
@@ -1467,7 +1467,7 @@ BOOL CspContainer::SignHash(
 		}
 		DWORD dwHashSize = 0;
 		dwSize = sizeof(DWORD);
-		if (!CryptGetHashParam(hHash, HP_HASHSIZE, (PBYTE) &dwHashSize, &dwSize, 0))
+		if (!CryptGetHashParam(hMyHash, HP_HASHSIZE, (PBYTE) &dwHashSize, &dwSize, 0))
 		{
 			dwError = GetLastError();
 			Trace(TRACE_LEVEL_ERROR, L"CryptGetHashParam failed 0x%08X", dwError);
@@ -1480,7 +1480,7 @@ BOOL CspContainer::SignHash(
 			Trace(TRACE_LEVEL_ERROR, L"ERROR_OUTOFMEMORY");
 			__leave;
 		}
-		if (!CryptGetHashParam(hHash, HP_HASHVAL, pbHash, &dwHashSize, 0))
+		if (!CryptGetHashParam(hMyHash, HP_HASHVAL, pbHash, &dwHashSize, 0))
 		{
 			dwError = GetLastError();
 			Trace(TRACE_LEVEL_ERROR, L"CryptGetHashParam failed 0x%08X", dwError);
