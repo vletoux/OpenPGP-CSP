@@ -73,6 +73,10 @@ CspContainer::~CspContainer()
 		CryptDestroyHash(handle->m_hHash);
 		delete handle;
 	}
+	if (m_szUIPROMPT)
+		free (m_szUIPROMPT);
+	if (m_szPinPROMPT)
+		free (m_szPinPROMPT);
 	if (m_hKey)
 		CryptDestroyKey(m_hKey);
 	if (m_hProv)
@@ -1185,6 +1189,18 @@ _Success_(return) BOOL CspContainer::GetProvParam(
 	return fReturn;
 }
 
+PWSTR DuplicateUnicodeString(PWSTR source)
+{
+	if (source == NULL)
+		return NULL;
+	size_t len = wcslen(source) + 1;
+	PWSTR output = (PWSTR) malloc(sizeof(WCHAR) * len);
+	if (!output)
+		return NULL;
+	wcscpy_s(output, len, source);
+	return output;
+}
+
 BOOL CspContainer::SetProvParam(
 						__in    DWORD dwParam,
 						__in     CONST  BYTE *pbData,
@@ -1217,11 +1233,15 @@ BOOL CspContainer::SetProvParam(
 			}
 			break;
 		case PP_PIN_PROMPT_STRING:
-			m_szPinPROMPT = (PWSTR) pbData;
+			if (m_szPinPROMPT)
+				free (m_szPinPROMPT);
+			m_szPinPROMPT = DuplicateUnicodeString((PWSTR) pbData);
 			fReturn = TRUE;
 			break;
 		case PP_UI_PROMPT:
-			m_szUIPROMPT = (PWSTR) pbData;
+			if (m_szUIPROMPT)
+				free (m_szUIPROMPT);
+			m_szUIPROMPT = DuplicateUnicodeString((PWSTR) pbData);
 			fReturn = TRUE;
 			break;
 		case PP_USE_HARDWARE_RNG:
