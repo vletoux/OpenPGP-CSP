@@ -819,3 +819,15 @@ BOOL BaseContainer::SaveCertificate(__in_bcount(dwSize) PBYTE pbData, __in  DWOR
 	SetLastError(dwError);
 	return fReturn;
 }
+
+PWSTR DuplicateUnicodeString(PWSTR source)
+{
+	if (source == NULL)
+		return NULL;
+	size_t len = wcslen(source) + 1;
+	PWSTR output = (PWSTR) malloc(sizeof(WCHAR) * len);
+	if (!output)
+		return NULL;
+	wcscpy_s(output, len, source);
+	return output;
+}

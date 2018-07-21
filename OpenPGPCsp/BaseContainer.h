@@ -21,6 +21,7 @@ BOOL ExtractReaderAndContainerFromGeneralNameA(__in PCSTR szSubmittedContainer, 
 											  __out PCSTR *pszReader, __out PCSTR *pszContainer);
 BOOL ExtractReaderAndContainerFromGeneralNameW(__in PCWSTR szSubmittedContainer, __in PWSTR szBuffer, __in DWORD dwBufferSize,
 											  __out PCWSTR *pszReader, __out PCWSTR *pszContainer);
+PWSTR DuplicateUnicodeString(PWSTR source);
 
 class  BaseContainer  {
 

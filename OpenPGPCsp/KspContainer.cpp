@@ -747,6 +747,7 @@ BOOL KspKey::LoadPublicKey()
 			Trace(TRACE_LEVEL_ERROR,L"BCryptImportKeyPair failed 0x%08X", dwError);
 			__leave;
 		}
+		Trace(TRACE_LEVEL_INFO, L"public key imported");
 		fReturn = TRUE;
 	}
 	__finally
@@ -1114,16 +1115,34 @@ KspKey::KspKey(KspContainer* kspcontainer)
 	m_dwBitLength = 0;
 	m_isFinalized = FALSE;
 	m_szReader[0] = 0;
+	m_hContext = NULL;
+	m_hCard = NULL;
+	m_Card = NULL;
+	m_dwLegacyKeySpec = 0;
+	m_szPinPROMPT = NULL;
+	m_szUIPROMPT = NULL;
 }
 
 KspKey::~KspKey()
 {
+	if (m_szUIPROMPT)
+		free (m_szUIPROMPT);
+	if (m_szPinPROMPT)
+		free (m_szPinPROMPT);
 	if (m_szKeyName)
 		free((PVOID)m_szKeyName);
 	if (m_key)
 		BCryptDestroyKey(m_key);
 	if (m_hAlgProv)
 		BCryptCloseAlgorithmProvider(m_hAlgProv, 0);
+	if (m_Card)
+	{
+		delete m_Card;
+		// important - to close smart card transaction & in case of error (replaced by 0xcdcdcdcd in debug mode)
+		m_Card = NULL;
+	}
+	if (m_hCard) SCardDisconnect(m_hCard, SCARD_LEAVE_CARD);
+	if (m_hContext) SCardReleaseContext(m_hContext);
 }
 
 _Success_(return) BOOL KspKey::GetKeyProperty(
@@ -1177,8 +1196,11 @@ __in    DWORD   dwFlags)
 		{
 			cbResult = sizeof(DWORD);
 		}
+		else if (wcscmp(pszProperty, NCRYPT_KEY_USAGE_PROPERTY) == 0)
+		{
+			cbResult = sizeof(DWORD);
+		}
 		else if(wcscmp(pszProperty, NCRYPT_LENGTH_PROPERTY) == 0 ||
-				wcscmp(pszProperty, NCRYPT_KEY_USAGE_PROPERTY) == 0 ||
 				wcscmp(pszProperty, NCRYPT_BLOCK_LENGTH_PROPERTY) == 0)
 		{
 			if (!m_isFinalized)
@@ -1242,11 +1264,22 @@ __in    DWORD   dwFlags)
 			((NCRYPT_SUPPORTED_LENGTHS*)pbOutput)->dwMaxLength = 3072;
 			((NCRYPT_SUPPORTED_LENGTHS*)pbOutput)->dwIncrement = 1024;
 		}
-		else if(wcscmp(pszProperty, NCRYPT_BLOCK_LENGTH_PROPERTY) == 0 ||
-				wcscmp(pszProperty, NCRYPT_KEY_TYPE_PROPERTY) == 0 || 
-				wcscmp(pszProperty, NCRYPT_LENGTH_PROPERTY) == 0)
+		else if(wcscmp(pszProperty, NCRYPT_BLOCK_LENGTH_PROPERTY) == 0)
 		{
-			dwError = BCryptGetProperty( m_key, pszProperty, pbOutput, cbOutput, pcbResult, dwFlags);
+			dwError = BCryptGetProperty( m_key, BCRYPT_BLOCK_LENGTH, pbOutput, cbOutput, pcbResult, dwFlags);
+			if (dwError)
+			{
+				Trace(TRACE_LEVEL_ERROR, L"BCryptGetProperty failed 0x%08X", dwError);
+				__leave;
+			}
+		}
+		else if(wcscmp(pszProperty, NCRYPT_KEY_TYPE_PROPERTY) == 0)
+		{
+			*(DWORD *)pbOutput = 0;
+		}
+		else if(wcscmp(pszProperty, NCRYPT_LENGTH_PROPERTY) == 0)
+		{
+			dwError = BCryptGetProperty( m_key, BCRYPT_KEY_STRENGTH, pbOutput, cbOutput, pcbResult, dwFlags);
 			if (dwError)
 			{
 				Trace(TRACE_LEVEL_ERROR, L"BCryptGetProperty failed 0x%08X", dwError);
@@ -1329,6 +1362,54 @@ __in    DWORD   dwFlags)
 				__leave;
 			}
 			m_dwBitLength = *(PDWORD) (pbInput);
+		}
+		else if (wcscmp(pszProperty, NCRYPT_KEY_USAGE_PROPERTY) == 0)
+		{
+			if (m_isFinalized)
+			{
+				Trace(TRACE_LEVEL_ERROR, L"Key is finalized");
+				dwError = NTE_INVALID_HANDLE; // same error code returned than CNG
+				__leave;
+			}
+			DWORD usage = *(PDWORD) (pbInput);
+			Trace(TRACE_LEVEL_INFO, L"Key usage %d", usage);
+			if (usage == NCRYPT_ALLOW_SIGNING_FLAG)
+				m_dwLegacyKeySpec = AT_SIGNATURE;
+			else
+				m_dwLegacyKeySpec = AT_KEYEXCHANGE;
+		}
+		else if (wcscmp(pszProperty, NCRYPT_UI_POLICY_PROPERTY) == 0)
+		{
+			if (m_isFinalized)
+			{
+				Trace(TRACE_LEVEL_ERROR, L"Key is finalized");
+				dwError = NTE_INVALID_HANDLE; // same error code returned than CNG
+				__leave;
+			}
+			// ignored
+		}
+		else if (wcscmp(pszProperty, NCRYPT_EXPORT_POLICY_PROPERTY) == 0)
+		{
+			if (m_isFinalized)
+			{
+				Trace(TRACE_LEVEL_ERROR, L"Key is finalized");
+				dwError = NTE_INVALID_HANDLE; // same error code returned than CNG
+				__leave;
+			}
+			// ignored
+		}
+		else if (wcscmp(pszProperty, NCRYPT_USE_CONTEXT_PROPERTY) == 0)
+		{
+			if (m_isFinalized)
+			{
+				Trace(TRACE_LEVEL_ERROR, L"Key is finalized");
+				dwError = NTE_INVALID_HANDLE; // same error code returned than CNG
+				__leave;
+			}
+			// ignored
+			if (m_szPinPROMPT)
+				free(m_szPinPROMPT);
+			m_szPinPROMPT = DuplicateUnicodeString((PWSTR) pbInput);
 		}
 		else
 		{
@@ -1783,6 +1864,8 @@ _Success_(return) BOOL KspKey::DeleteKey(DWORD dwFlags)
 			Trace(TRACE_LEVEL_ERROR, L"RemoveKey failed 0x%08X", dwError);
 			__leave;
 		}
+		EndTransaction(dwPinId, fAuthenticated);
+		fEndTransaction = FALSE;
 		Trace(TRACE_LEVEL_INFO, L"Freeing handle");
 		m_kspcontainer->FreeKey((NCRYPT_KEY_HANDLE)this);
 		fReturn = TRUE;
@@ -2010,7 +2093,7 @@ _Success_(return) BOOL KspKey::FinalizeKey(DWORD dwFlags)
 				dwError = GetLastError();
 				__leave;
 			}
-			//TODO
+			m_isFinalized = TRUE;
 			fReturn = TRUE;
 		}
 	}

@@ -47,6 +47,7 @@ CspContainer::CspContainer()
 	m_dwKeySpec = 0;
 	m_szPinPROMPT = NULL;
 	m_szUIPROMPT = NULL;
+	m_Card = NULL;
 	BOOL fReturn = CryptAcquireContext(&m_hProv, NULL, MS_ENH_RSA_AES_PROV, PROV_RSA_AES, CRYPT_VERIFYCONTEXT | CRYPT_SILENT);
 	if (!fReturn)
 	{
@@ -1187,18 +1188,6 @@ _Success_(return) BOOL CspContainer::GetProvParam(
 	}
 	SetLastError(dwError);
 	return fReturn;
-}
-
-PWSTR DuplicateUnicodeString(PWSTR source)
-{
-	if (source == NULL)
-		return NULL;
-	size_t len = wcslen(source) + 1;
-	PWSTR output = (PWSTR) malloc(sizeof(WCHAR) * len);
-	if (!output)
-		return NULL;
-	wcscpy_s(output, len, source);
-	return output;
 }
 
 BOOL CspContainer::SetProvParam(
