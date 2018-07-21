@@ -29,10 +29,8 @@ SelectOpenPGPv3KeyDialog::~SelectOpenPGPv3KeyDialog()
 
 }
 
-INT_PTR SelectOpenPGPv3KeyDialog::Show()
+INT_PTR SelectOpenPGPv3KeyDialog::Show(HWND hWndParent)
 {
-	HWND hWndParent = NULL;
-	GetHWND(&hWndParent);
 	return DialogBoxParam(g_hInst, MAKEINTRESOURCE(IDD_SELECTOPENPGPV3KEY), hWndParent, _dialogProc, (LPARAM)this);
 }
 

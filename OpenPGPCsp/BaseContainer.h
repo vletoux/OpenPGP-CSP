@@ -45,6 +45,7 @@ public:
 	BOOL GetUserStore(__in PTSTR szProviderName, __out HCERTSTORE* phStore);
 	BOOL PopulateUserStoreFromContainerName(__in HCERTSTORE hStore, __in PTSTR szProviderName, __in PSTR szContainer, __in DWORD dwKeySpec, __in PBYTE pbData, __in DWORD dwSize);
 	BOOL LoadCertificate(_Out_writes_bytes_to_opt_(*pdwSize, *pdwSize) PBYTE pbData, __inout PDWORD pdwSize);
+	BOOL SaveCertificate(__in_bcount(dwSize) PBYTE pbData, __in  DWORD dwSize, __in DWORD dwKeySpec);
 
 	// cryto operations
 	BOOL SignData(__in PCWSTR szAlgorithm, __in PBYTE pbHashValue, __in DWORD cbHashValue,

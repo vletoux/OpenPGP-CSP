@@ -253,7 +253,7 @@ BOOL OpenPGPCardv3::GetCertificate(__in DWORD dwKeyId, _Out_writes_bytes_to_opt_
 }
 
 
-BOOL OpenPGPCardv3::GetKeyIdForNewKey(__in ALG_ID Algid, __out PDWORD pdwKeyId)
+BOOL OpenPGPCardv3::GetKeyIdForNewKey(__in ALG_ID Algid, __in_opt HWND hWndParent, __out PDWORD pdwKeyId)
 {
 	BOOL fReturn = FALSE;
 	DWORD dwError = 0;
@@ -265,7 +265,7 @@ BOOL OpenPGPCardv3::GetKeyIdForNewKey(__in ALG_ID Algid, __out PDWORD pdwKeyId)
 		return FALSE;
 	}
 	Trace(TRACE_LEVEL_INFO, L"showing SelectOpenPGPv3KeyDialog dialog");
-	if (dialog.Show() != IDOK)
+	if (dialog.Show(hWndParent) != IDOK)
 	{
 		Trace(TRACE_LEVEL_INFO, L"SelectOpenPGPv3KeyDialog dialog cancelled");
 		SetLastError(ERROR_CANCELLED);

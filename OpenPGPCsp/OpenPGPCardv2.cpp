@@ -1263,7 +1263,7 @@ BOOL OpenPGPCardv2::GenerateKey(__in ALG_ID Algid, __in DWORD dwKeyId, __in DWOR
 	return fReturn;
 }
 
-BOOL OpenPGPCardv2::GetKeyIdForNewKey(__in ALG_ID Algid, __out PDWORD pdwKeyId)
+BOOL OpenPGPCardv2::GetKeyIdForNewKey(__in ALG_ID Algid, __in_opt HWND hWndParent, __out PDWORD pdwKeyId)
 {
 	BOOL fReturn = FALSE;
 	DWORD dwError = 0;
@@ -1275,7 +1275,7 @@ BOOL OpenPGPCardv2::GetKeyIdForNewKey(__in ALG_ID Algid, __out PDWORD pdwKeyId)
 		return FALSE;
 	}
 	Trace(TRACE_LEVEL_INFO, L"showing SelectOpenPGPv2KeyDialog dialog");
-	if (dialog.Show() != IDOK)
+	if (dialog.Show(hWndParent) != IDOK)
 	{
 		Trace(TRACE_LEVEL_INFO, L"SelectOpenPGPv2KeyDialog dialog cancelled");
 		SetLastError(ERROR_CANCELLED);

@@ -206,7 +206,6 @@ private :
 				
 				BOOL AskForSmartCardReader();
 				
-				BOOL SaveCertificate(__in_bcount(dwSize) PBYTE pbData, __in  DWORD dwSize, __in DWORD dwKeySpec);
 				BOOL EnumerateContainer(_Out_writes_bytes_to_opt_(*pdwDataLen, *pdwDataLen) PSTR szContainer, __inout PDWORD pdwDataLen, DWORD dwFlags);
 
 				HWND GetParentHwnd();

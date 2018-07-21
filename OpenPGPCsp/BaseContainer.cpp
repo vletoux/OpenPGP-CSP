@@ -767,3 +767,55 @@ BOOL BaseContainer::LoadCertificate(_Out_writes_bytes_to_opt_(*pdwSize, *pdwSize
 	SetLastError(dwError);
 	return fReturn;
 }
+
+BOOL BaseContainer::SaveCertificate(__in_bcount(dwSize) PBYTE pbData, __in  DWORD dwSize, __in DWORD dwKeySpec)
+{
+	DWORD dwError = 0;
+	BOOL fReturn = FALSE;
+	BOOL fEndTransaction = FALSE;
+	BOOL fAuthenticated = FALSE;
+	DWORD dwPinId = 0;
+	if (!m_Card)
+	{
+		Trace(TRACE_LEVEL_ERROR, L"Card is not initialized");
+		return FALSE;
+	}
+	__try
+	{
+		if (!GetPIN(PIN_OPERATION_SAVE_CERT, &dwPinId))
+		{
+			dwError = GetLastError();
+			Trace(TRACE_LEVEL_ERROR, L"GetPIN failed 0x%08X", dwError);
+			__leave;
+		}
+		if (!StartTransaction())
+		{
+			dwError = GetLastError();
+			Trace(TRACE_LEVEL_ERROR, L"StartTransaction failed 0x%08X", dwError);
+			__leave;
+		}
+		fEndTransaction = TRUE;
+		// authenticate
+		if (!Authenticate(dwPinId))
+		{
+			dwError = GetLastError();
+			Trace(TRACE_LEVEL_ERROR, L"Authenticate failed 0x%08X", dwError);
+			__leave;
+		}
+		fAuthenticated = TRUE;
+		if (!m_Card->SaveCertificate(m_dwCardContainerId, pbData, dwSize, dwKeySpec))
+		{
+			dwError = GetLastError();
+			Trace(TRACE_LEVEL_ERROR, L"SaveCertificate failed 0x%08X", dwError);
+			__leave;
+		}
+		fReturn = TRUE;
+	}
+	__finally
+	{
+		if (fEndTransaction)
+			EndTransaction(dwPinId, fAuthenticated);
+	}
+	SetLastError(dwError);
+	return fReturn;
+}

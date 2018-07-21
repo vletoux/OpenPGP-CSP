@@ -21,7 +21,7 @@ class SelectOpenPGPv3KeyDialog {
 public:
     SelectOpenPGPv3KeyDialog(__in ALG_ID Algid, BOOL fSupportMse);
 	~SelectOpenPGPv3KeyDialog();
-    INT_PTR Show();
+    INT_PTR Show(HWND hWndParent);
 
 	virtual INT_PTR DialogProc(UINT msg, WPARAM wp, LPARAM lp);
 	DWORD m_dwKeyId;

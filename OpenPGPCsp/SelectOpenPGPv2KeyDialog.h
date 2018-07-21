@@ -21,7 +21,7 @@ class SelectOpenPGPv2KeyDialog {
 public:
     SelectOpenPGPv2KeyDialog(__in ALG_ID Algid);
 	~SelectOpenPGPv2KeyDialog();
-    INT_PTR Show();
+    INT_PTR Show(HWND hWndParent);
 
 	virtual INT_PTR DialogProc(UINT msg, WPARAM wp, LPARAM lp);
 	DWORD m_dwKeyId;

@@ -1660,6 +1660,7 @@ BOOL CspContainer::GenKey(
 	BOOL fEndTransaction = FALSE;
 	BOOL fAuthenticated = FALSE;
 	DWORD dwPinId = 0;
+	HWND hWndParent = NULL;
 	__try
 	{
 		if (Algid == AT_KEYEXCHANGE)
@@ -1684,7 +1685,8 @@ BOOL CspContainer::GenKey(
 				dwBitlen = (RSA1024BIT_KEY*2) >> 16;
 			}
 			Trace(TRACE_LEVEL_INFO, L"Bit len = %d", dwBitlen >> 16);
-			if (!m_Card->GetKeyIdForNewKey(Algid, &m_dwCardContainerId))
+			GetHWND(&hWndParent);
+			if (!m_Card->GetKeyIdForNewKey(Algid, hWndParent, &m_dwCardContainerId))
 			{
 				dwError = GetLastError();
 				Trace(TRACE_LEVEL_ERROR, L"GetKeyIdForNewKey failed 0x%08X", dwError);
@@ -2192,6 +2194,7 @@ BOOL CspContainer::ImportKey(
 	PBYTE pbTempKey = NULL;
 	HCRYPTKEY hMyPubKey = NULL;
 	PPLAINTEXTKEYBLOBTYPE pbImportKeyBlob = NULL;
+	HWND hWndParent = NULL;
 	__try
 	{
 		*phKey = NULL;
@@ -2239,7 +2242,8 @@ BOOL CspContainer::ImportKey(
 			if (m_dwCardContainerId == INVALID_CONTAINER_ID)
 			{
 				Trace(TRACE_LEVEL_INFO, L"no key id");
-				if (!m_Card->GetKeyIdForNewKey(header->aiKeyAlg,&m_dwCardContainerId))
+				GetHWND(&hWndParent);
+				if (!m_Card->GetKeyIdForNewKey(header->aiKeyAlg,hWndParent, &m_dwCardContainerId))
 				{
 					dwError = GetLastError();
 					Trace(TRACE_LEVEL_ERROR, L"GetPIN failed 0x%08X", dwError);
@@ -2707,59 +2711,6 @@ BOOL CspContainer::GetUserKey(
 	SetLastError(dwError);
 	return fReturn;
 }
-
-BOOL CspContainer::SaveCertificate(__in_bcount(dwSize) PBYTE pbData, __in  DWORD dwSize, __in DWORD dwKeySpec)
-{
-	DWORD dwError = 0;
-	BOOL fReturn = FALSE;
-	BOOL fEndTransaction = FALSE;
-	BOOL fAuthenticated = FALSE;
-	DWORD dwPinId = 0;
-	if (!m_Card)
-	{
-		Trace(TRACE_LEVEL_ERROR, L"Card is not initialized");
-		return FALSE;
-	}
-	__try
-	{
-		if (!GetPIN(PIN_OPERATION_SAVE_CERT, &dwPinId))
-		{
-			dwError = GetLastError();
-			Trace(TRACE_LEVEL_ERROR, L"GetPIN failed 0x%08X", dwError);
-			__leave;
-		}
-		if (!StartTransaction())
-		{
-			dwError = GetLastError();
-			Trace(TRACE_LEVEL_ERROR, L"StartTransaction failed 0x%08X", dwError);
-			__leave;
-		}
-		fEndTransaction = TRUE;
-		// authenticate
-		if (!Authenticate(dwPinId))
-		{
-			dwError = GetLastError();
-			Trace(TRACE_LEVEL_ERROR, L"Authenticate failed 0x%08X", dwError);
-			__leave;
-		}
-		fAuthenticated = TRUE;
-		if (!m_Card->SaveCertificate(m_dwCardContainerId, pbData, dwSize, dwKeySpec))
-		{
-			dwError = GetLastError();
-			Trace(TRACE_LEVEL_ERROR, L"SaveCertificate failed 0x%08X", dwError);
-			__leave;
-		}
-		fReturn = TRUE;
-	}
-	__finally
-	{
-		if (fEndTransaction)
-			EndTransaction(dwPinId, fAuthenticated);
-	}
-	SetLastError(dwError);
-	return fReturn;
-}
-
 
 BOOL CspContainer::EnumerateContainer(_Out_writes_bytes_to_opt_(*pdwDataLen, *pdwDataLen) PSTR szContainer, __inout PDWORD pdwDataLen, DWORD dwFlags)
 {

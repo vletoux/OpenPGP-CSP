@@ -21,6 +21,11 @@ class KspContainer;
 class  KspKey : BaseContainer {
 public:
 	static KspKey* LoadKey(KspContainer* kspcontainer, __in PCWSTR szReader, __in PCWSTR szContainer);
+	static KspKey* CreateNonPersitedKey(KspContainer* kspcontainer, 
+									 __in_opt LPCWSTR szKeyName, 
+									 __in    DWORD   dwLegacyKeySpec,
+									__in_opt BCRYPT_ALG_HANDLE hProv,
+									__in_opt BCRYPT_KEY_HANDLE hKey);
 
 	_Success_(return) BOOL GetKeyProperty(
 		__in    LPCWSTR pszProperty,
@@ -72,16 +77,20 @@ public:
 		__in    DWORD   cbSignature,
 		__in    DWORD   dwFlags);
 	_Success_(return) BOOL DeleteKey(DWORD dwFlags);
+	_Success_(return) BOOL FinalizeKey(DWORD dwFlags);
 	KspKey::~KspKey();
 private:
 	KspKey(KspContainer* kspcontainer);
+	BOOL LoadPublicKey();
 	PCWSTR m_szKeyName;
 	BCRYPT_ALG_HANDLE m_hAlgProv;
 	BCRYPT_KEY_HANDLE m_key;
+	BOOL m_isFinalized;
 	KspContainer* m_kspcontainer;
 	static KspKey* Allocate(KspContainer* kspcontainer) { return new KspKey(kspcontainer);}
 	WCHAR m_szReader[MAX_READER_NAME];
 	DWORD m_dwLegacyKeySpec;
+	DWORD m_dwBitLength; // used when creating new keys
 };
 
 #define MAX_ENUM_SUPPORTED 30
@@ -104,6 +113,11 @@ public :
 	static BOOL Clean();
 
 	KspKey* OpenKey(__in PCWSTR pszKeyName,__in_opt DWORD  dwLegacyKeySpec, BOOL fSilent);
+	KspKey* CreateNonPersistedKey(__in_opt LPCWSTR pszKeyName,
+			__in    DWORD   dwLegacyKeySpec,
+			__in    DWORD   dwFlags,
+			__in_opt BCRYPT_ALG_HANDLE hProv,
+			__in_opt BCRYPT_KEY_HANDLE hKey);
 	_Success_(return) BOOL GetProviderProperty(
 		__in    LPCWSTR pszProperty,
 		__out_bcount_part_opt(cbOutput, *pcbResult) PBYTE pbOutput,
@@ -143,7 +157,7 @@ private :
 	static BOOL CleanProviders();
 	std::list<KspKey*> m_keyHandles;
 	KspKey* LocateKey(__in    NCRYPT_KEY_HANDLE hKey);
-	KspEnumNCryptKeyName* BuildEnumData();
+	KspEnumNCryptKeyName* BuildEnumData(__in_opt LPCWSTR pszScope);
 	BOOL GetUserStoreWithAllCard(__out HCERTSTORE* phStore);
 
 };

@@ -1010,10 +1010,125 @@ void testKsp()
 	}
 }
 
+void testImportCNG()
+{
+	NCRYPT_PROV_HANDLE HProv = NULL;
+	DWORD dwReturn = 0;
+	HCERTSTORE hStore = NULL;
+	BCRYPT_ALG_HANDLE hBRSA = NULL;
+	BCRYPT_KEY_HANDLE hKey = NULL;
+	NCRYPT_KEY_HANDLE hTestKey = NULL;
+	BYTE pbRsaTest[50000];
+	__try
+	{
+		dwReturn = BCryptOpenAlgorithmProvider(&hBRSA,BCRYPT_RSA_ALGORITHM,NULL,0);
+		if (dwReturn)
+		{
+			printf("error BCryptOpenAlgorithmProvider 0x%08X\r\n", dwReturn);
+			__leave;
+		}
+		dwReturn = BCryptGenerateKeyPair(hBRSA, &hKey, 2048, 0);
+		if (dwReturn)
+		{
+			printf("error BCryptGenerateKeyPair 0x%08X\r\n", dwReturn);
+			__leave;
+		}
+		dwReturn = BCryptFinalizeKeyPair(hKey, 0);
+		if (dwReturn)
+		{
+			printf("error BCryptFinalizeKeyPair 0x%08X\r\n", dwReturn);
+			__leave;
+		}
+		DWORD dwBlobSize = sizeof (pbRsaTest);
+		dwReturn = BCryptExportKey(hKey,NULL,
+											BCRYPT_RSAPRIVATE_BLOB,
+											pbRsaTest,
+											sizeof(pbRsaTest),
+											&dwBlobSize,
+											0);
+		if (dwReturn)
+		{
+			printf("error BCryptExportKey 0x%08X\r\n", dwReturn);
+			__leave;
+		}
+		dwReturn = NCryptOpenStorageProvider(&HProv, TEXT(KSPNAME),0);
+		if (dwReturn)
+		{
+			printf("error NCryptOpenStorageProvider 0x%08X\r\n", dwReturn);
+			__leave;
+		}
+		dwReturn = NCryptImportKey(HProv, NULL, BCRYPT_RSAPRIVATE_BLOB, NULL, &hTestKey, pbRsaTest, dwBlobSize, 0);
+		if (dwReturn)
+		{
+			printf("error NCryptImportKey 0x%08X\r\n", dwReturn);
+			__leave;
+		}
+		// to test: NCRYPT_DO_NOT_FINALIZE_FLAG 
+	}
+	__finally
+	{
+
+		if (hKey)
+			BCryptDestroyKey(hKey);
+		if (hBRSA)
+			BCryptCloseAlgorithmProvider(hBRSA, 0);
+		if (hTestKey)
+			NCryptFreeObject(hTestKey);
+		if (HProv) 
+			NCryptFreeObject(HProv);
+	}
+}
+
+void testCreateKeyCNG()
+{
+	NCRYPT_PROV_HANDLE HProv = NULL;
+	DWORD dwReturn = 0;
+	NCRYPT_KEY_HANDLE hTestKey = NULL;
+	__try
+	{
+		dwReturn = NCryptOpenStorageProvider(&HProv, TEXT(KSPNAME),0);
+		if (dwReturn)
+		{
+			printf("error NCryptOpenStorageProvider 0x%08X\r\n", dwReturn);
+			__leave;
+		}
+		dwReturn = NCryptCreatePersistedKey(HProv, &hTestKey, BCRYPT_RSA_ALGORITHM, L"test for CNG", AT_KEYEXCHANGE, 0);
+		if (dwReturn)
+		{
+			printf("error NCryptCreatePersistedKey 0x%08X\r\n", dwReturn);
+			__leave;
+		}
+		DWORD dwLength = 2048;
+		DWORD dwSize = 4;
+		dwReturn = NCryptSetProperty(hTestKey, NCRYPT_LENGTH_PROPERTY, (PBYTE) &dwLength, dwSize, 0);
+		if (dwReturn)
+		{
+			printf("error NCryptSetProperty 0x%08X\r\n", dwReturn);
+			__leave;
+		}
+		dwReturn = NCryptFinalizeKey(hTestKey, 0);
+		if (dwReturn)
+		{
+			printf("error NCryptFinalizeKey 0x%08X\r\n", dwReturn);
+			__leave;
+		}
+	}
+	__finally
+	{
+		if (hTestKey)
+			NCryptFreeObject(hTestKey);
+		if (HProv) 
+			NCryptFreeObject(HProv);
+	}
+}
+
+
 int _tmain(int argc, _TCHAR* argv[])
 {
 
-	testKsp();
+	//testKsp();
 	//testCsp();
+	testCreateKeyCNG();
+	//testImportCNG();
 	return 0;
 }

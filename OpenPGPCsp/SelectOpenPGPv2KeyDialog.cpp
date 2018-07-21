@@ -28,10 +28,8 @@ SelectOpenPGPv2KeyDialog::~SelectOpenPGPv2KeyDialog()
 
 }
 
-INT_PTR SelectOpenPGPv2KeyDialog::Show()
+INT_PTR SelectOpenPGPv2KeyDialog::Show(HWND hWndParent)
 {
-	HWND hWndParent = NULL;
-	GetHWND(&hWndParent);
 	return DialogBoxParam(g_hInst, MAKEINTRESOURCE(IDD_SELECTOPENPGPV2KEY), hWndParent, _dialogProc, (LPARAM)this);
 }
 

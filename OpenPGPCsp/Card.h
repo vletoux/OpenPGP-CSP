@@ -52,7 +52,7 @@ class Card
 		virtual DWORD Card::Reinit() = 0;
 		virtual BOOL GenerateKey(__in ALG_ID Algid, __in DWORD dwKeyId, __in DWORD dwBitLen) = 0;
 		// called out of a transaction
-		virtual BOOL GetKeyIdForNewKey(__in ALG_ID Algid, __out PDWORD dwKeyId) = 0;
+		virtual BOOL GetKeyIdForNewKey(__in ALG_ID Algid, __in_opt HWND hWndParent, __out PDWORD dwKeyId) = 0;
 		virtual BOOL AskForPin(__in HWND hWndParent, __in PWSTR szPinPROMPT, __in DWORD dwPinId, __out_ecount(MAX_PIN_SIZE) PSTR szPin) = 0;
 		virtual BOOL SaveCertificate(__in DWORD dwKey, __in_bcount(dwSize) PBYTE pbData, __in DWORD dwSize, __in DWORD dwKeySpec) = 0;
 		virtual BOOL RemoveKey(__in DWORD dwKey) = 0;

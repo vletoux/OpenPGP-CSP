@@ -112,7 +112,7 @@ public:
 	virtual BOOL Deauthenticate(__in DWORD dwPinId);
 	virtual DWORD Reinit();
 	virtual BOOL GenerateKey(__in ALG_ID Algid, __in DWORD dwKeyId, __in DWORD dwBitLen);
-	virtual BOOL GetKeyIdForNewKey(__in ALG_ID Algid, __out PDWORD dwKeyId);
+	virtual BOOL GetKeyIdForNewKey(__in ALG_ID Algid, __in_opt HWND hWndParent, __out PDWORD dwKeyId);
 	virtual BOOL AskForPin(__in HWND hWndParent, __in PWSTR szPinPROMPT, __in DWORD dwPinId, __out_ecount(MAX_PIN_SIZE) PSTR szPin);
 	virtual BOOL SaveCertificate(__in DWORD dwKey, __in_bcount(dwSize) PBYTE pbData, __in DWORD dwSize, __in DWORD dwKeySpec);
 	virtual BOOL RemoveKey(__in DWORD dwKey);

@@ -262,8 +262,41 @@ KSPCreatePersistedKey(
     __in    DWORD   dwLegacyKeySpec,
     __in    DWORD   dwFlags)
 {
-	Trace(TRACE_LEVEL_ERROR, L"Not supported");
-    return NTE_NOT_SUPPORTED;
+	BOOL fReturn = FALSE;
+	DWORD dwError = 0;
+	Trace(TRACE_LEVEL_INFO, L"--> KSPCreatePersistedKey %s %s %d %d", pszAlgId, pszKeyName, dwLegacyKeySpec, dwFlags);
+	__try
+	{
+		KspContainer* container = KspContainer::GetContainerFromHandle(hProvider);
+		if (!container)
+		{
+			dwError = GetLastError();
+			Trace(TRACE_LEVEL_ERROR, L"GetContainerFromHandle failed 0x%08X", dwError);
+			__leave;
+		}
+		KspKey* key = container->CreateNonPersistedKey(pszKeyName, dwLegacyKeySpec, dwFlags, NULL, NULL);
+		if (!key)
+		{
+			dwError = GetLastError();
+			Trace(TRACE_LEVEL_ERROR, L"CreateNonPersistedKey failed 0x%08X", dwError);
+			__leave;
+		}
+		Trace(TRACE_LEVEL_VERBOSE, L"Key handle: 0x%p", key);
+		*phKey = (NCRYPT_KEY_HANDLE) key;
+		fReturn = TRUE;
+    }
+	__finally
+	{
+		Trace(TRACE_LEVEL_INFO, L"<-- KSPCreatePersistedKey %s 0x%08X", (fReturn?L"TRUE":L"FALSE"), dwError);
+	}
+	if (fReturn)
+		return ERROR_SUCCESS;
+	else
+	{
+		if (dwError == 0)
+			dwError = ERROR_INTERNAL_ERROR;
+		return dwError;
+	}
 }
 
 
@@ -563,8 +596,38 @@ KSPFinalizeKey(
     __in    NCRYPT_KEY_HANDLE hKey,
     __in    DWORD   dwFlags)
 {
-    Trace(TRACE_LEVEL_ERROR, L"Not supported");
-    return NTE_NOT_SUPPORTED;
+    BOOL fReturn = FALSE;
+	DWORD dwError = 0;
+	Trace(TRACE_LEVEL_INFO, L"--> KSPFinalizeKey 0x%08X", dwFlags);
+	__try
+	{
+		KspKey* key = KspContainer::GetKeyFromHandle(hProvider, hKey);
+		if (!key)
+		{
+			dwError = GetLastError();
+			Trace(TRACE_LEVEL_ERROR, L"GetKeyFromHandle failed 0x%08X", dwError);
+			__leave;
+		}
+		if (!key->FinalizeKey(dwFlags))
+		{
+			dwError = GetLastError();
+			Trace(TRACE_LEVEL_ERROR, L"SetKeyProperty failed 0x%08X", dwError);
+			__leave;
+		}
+		fReturn = TRUE;
+	}
+	__finally
+	{
+		Trace(TRACE_LEVEL_INFO, L"<-- KSPFinalizeKey %s 0x%08X", (fReturn?L"TRUE":L"FALSE"), dwError);
+	}
+	if (fReturn)
+		return ERROR_SUCCESS;
+	else
+	{
+		if (dwError == 0)
+			dwError = ERROR_INTERNAL_ERROR;
+		return dwError;
+	}
 }
 
 /******************************************************************************
