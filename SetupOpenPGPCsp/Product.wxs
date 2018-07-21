@@ -57,6 +57,18 @@
           <RegistryValue Type="integer" Name="Type" Value="1"/>
           <RegistryValue Type="integer" Name="SigInFile" Value="0"/>
         </RegistryKey>
+        <RegistryKey Root="HKLM" Key="SOFTWARE\Microsoft\Cryptography\Calais\SmartCards\OpenPGP Card v2 (via OpenPGP CSP)">
+          <RegistryValue Type="binary" Name="ATR" Value="3BDA18FF81B1FE751F030031C573C001400090000C"/>
+          <RegistryValue Type="binary" Name="ATRMask" Value="FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"/>
+          <RegistryValue Type="string" Name="Crypto Provider" Value="OpenPGP CSP"/>
+          <RegistryValue Type="string" Name="Smart Card Key Storage Provider" Value="OpenPGP KSP"/>
+        </RegistryKey>
+        <RegistryKey Root="HKLM" Key="SOFTWARE\Microsoft\Cryptography\Calais\SmartCards\OpenPGP Card v3 (via OpenPGP CSP)">
+          <RegistryValue Type="binary" Name="ATR" Value="3bda18ff81b1fe751f030031f573c001600090001c"/>
+          <RegistryValue Type="binary" Name="ATRMask" Value="FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"/>
+          <RegistryValue Type="string" Name="Crypto Provider" Value="OpenPGP CSP"/>
+          <RegistryValue Type="string" Name="Smart Card Key Storage Provider" Value="OpenPGP KSP"/>
+        </RegistryKey>
       </Component>
     </DirectoryRef>
     <?endif?>
@@ -64,13 +76,19 @@
     <DirectoryRef  Id="SystemFolder">
       <Component Id="OpenPGPCSP32" Guid="8DCB958E-E86F-43F5-A17F-A12C00A707C7" Win64="no">
         <File Id="OpenPGPCSP32dll" Name="OpenPGPCSP.dll" Source="$(var.SourceDirAlwaysX86)\OpenPGPCSP32.dll" KeyPath="yes" DiskId="1" SelfRegCost="1"/>
-
-        <RegistryKey Root="HKLM" Key="SOFTWARE\Microsoft\Cryptography\Calais\SmartCards\OpenPGP Card v2 (via OpenPGP CSP)">
-          <RegistryValue Type="binary" Name="ATR" Value="3BDA18FF81B1FE751F030031C573C001400090000C"/>
-          <RegistryValue Type="binary" Name="ATRMask" Value="FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"/>
-          <RegistryValue Type="string" Name="Crypto Provider" Value="OpenPGP CSP"/>
-          <RegistryValue Type="string" Name="Smart Card Key Storage Provider" Value="OpenPGP KSP"/>
+        <?if $(var.Platform) = x64 ?>
+        <RegistryKey Root="HKLM" Key="SOFTWARE\Wow6432Node\Microsoft\Cryptography\Defaults\Provider\OpenPGP CSP">
+          <RegistryValue Type="string" Name="Image Path" Value="OpenPGPCSP.dll"/>
+          <RegistryValue Type="integer" Name="Type" Value="1"/>
+          <RegistryValue Type="integer" Name="SigInFile" Value="0"/>
         </RegistryKey>
+        <?else?>
+        <RegistryKey Root="HKLM" Key="SOFTWARE\Microsoft\Cryptography\Defaults\Provider\OpenPGP CSP">
+          <RegistryValue Type="string" Name="Image Path" Value="OpenPGPCSP.dll"/>
+          <RegistryValue Type="integer" Name="Type" Value="1"/>
+          <RegistryValue Type="integer" Name="SigInFile" Value="0"/>
+        </RegistryKey>
+        <?endif?>
         <?if $(var.Platform) = x64 ?>
         <RegistryKey Root="HKLM" Key="SOFTWARE\Wow6432Node\Microsoft\Cryptography\Calais\SmartCards\OpenPGP Card v2 (via OpenPGP CSP)">
           <RegistryValue Type="binary" Name="ATR" Value="3BDA18FF81B1FE751F030031C573C001400090000C"/>
@@ -78,15 +96,24 @@
           <RegistryValue Type="string" Name="Crypto Provider" Value="OpenPGP CSP"/>
           <RegistryValue Type="string" Name="Smart Card Key Storage Provider" Value="OpenPGP KSP"/>
         </RegistryKey>
+        <?else?>
+        <RegistryKey Root="HKLM" Key="SOFTWARE\Microsoft\Cryptography\Calais\SmartCards\OpenPGP Card v2 (via OpenPGP CSP)">
+          <RegistryValue Type="binary" Name="ATR" Value="3BDA18FF81B1FE751F030031C573C001400090000C"/>
+          <RegistryValue Type="binary" Name="ATRMask" Value="FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"/>
+          <RegistryValue Type="string" Name="Crypto Provider" Value="OpenPGP CSP"/>
+          <RegistryValue Type="string" Name="Smart Card Key Storage Provider" Value="OpenPGP KSP"/>
+        </RegistryKey>
         <?endif?>
-        <RegistryKey Root="HKLM" Key="SOFTWARE\Microsoft\Cryptography\Calais\SmartCards\OpenPGP Card v3 (via OpenPGP CSP)">
+        
+        <?if $(var.Platform) = x64 ?>
+        <RegistryKey Root="HKLM" Key="SOFTWARE\Wow6432Node\Microsoft\Cryptography\Calais\SmartCards\OpenPGP Card v3 (via OpenPGP CSP)">
           <RegistryValue Type="binary" Name="ATR" Value="3bda18ff81b1fe751f030031f573c001600090001c"/>
           <RegistryValue Type="binary" Name="ATRMask" Value="FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"/>
           <RegistryValue Type="string" Name="Crypto Provider" Value="OpenPGP CSP"/>
           <RegistryValue Type="string" Name="Smart Card Key Storage Provider" Value="OpenPGP KSP"/>
         </RegistryKey>
-        <?if $(var.Platform) = x64 ?>
-        <RegistryKey Root="HKLM" Key="SOFTWARE\Wow6432Node\Microsoft\Cryptography\Calais\SmartCards\OpenPGP Card v3 (via OpenPGP CSP)">
+        <?else?>
+        <RegistryKey Root="HKLM" Key="SOFTWARE\Microsoft\Cryptography\Calais\SmartCards\OpenPGP Card v3 (via OpenPGP CSP)">
           <RegistryValue Type="binary" Name="ATR" Value="3bda18ff81b1fe751f030031f573c001600090001c"/>
           <RegistryValue Type="binary" Name="ATRMask" Value="FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"/>
           <RegistryValue Type="string" Name="Crypto Provider" Value="OpenPGP CSP"/>
