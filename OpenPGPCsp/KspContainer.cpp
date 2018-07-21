@@ -451,17 +451,19 @@ _Success_(return) BOOL KspContainer::EnumAlgorithms(
 		}
 
 
-		if(dwAlgOperations == 0 ||
-			((dwAlgOperations & NCRYPT_SIGNATURE_OPERATION))!=0
-			)
+		if (dwAlgOperations == 0 ||
+			dwAlgOperations & NCRYPT_SIGNATURE_OPERATION ||
+			dwAlgOperations & NCRYPT_ASYMMETRIC_ENCRYPTION_OPERATION )
 		{
 			cbOutput += sizeof(NCryptAlgorithmName) +
 						sizeof(BCRYPT_RSA_ALGORITHM);
 		}
 		else
 		{
-			dwError = NTE_NOT_SUPPORTED;
+			dwError = ERROR_SUCCESS;
+			*pdwAlgCount = 0;
 			Trace(TRACE_LEVEL_ERROR, L"invalid dwAlgOperations %d", dwAlgOperations);
+			fReturn = TRUE;
 			__leave;
 		}
 
@@ -479,10 +481,10 @@ _Success_(return) BOOL KspContainer::EnumAlgorithms(
 
 		pCurrentAlg->dwFlags = 0;
 		pCurrentAlg->dwClass = NCRYPT_ASYMMETRIC_ENCRYPTION_INTERFACE;
-		pCurrentAlg->dwAlgOperations = NCRYPT_SIGNATURE_OPERATION;
+		pCurrentAlg->dwAlgOperations = NCRYPT_ASYMMETRIC_ENCRYPTION_OPERATION | NCRYPT_SIGNATURE_OPERATION;
 
 		pCurrentAlg->pszName = (LPWSTR)pbCurrent;
-		CopyMemory(pbCurrent,
+		RtlCopyMemory(pbCurrent,
 				   BCRYPT_RSA_ALGORITHM,
 				   sizeof(BCRYPT_RSA_ALGORITHM));
 		pbCurrent += sizeof(BCRYPT_RSA_ALGORITHM);
@@ -1167,15 +1169,7 @@ __in    DWORD   dwFlags)
 		{
 			cbResult = sizeof(NCRYPT_RSA_ALGORITHM_GROUP);
 		}
-		else if (wcscmp(pszProperty, NCRYPT_BLOCK_LENGTH_PROPERTY) == 0)
-		{
-			cbResult = sizeof(DWORD);
-		}
 		else if(wcscmp(pszProperty, NCRYPT_EXPORT_POLICY_PROPERTY) == 0)
-		{
-			cbResult = sizeof(DWORD);
-		}
-		else if(wcscmp(pszProperty, NCRYPT_KEY_USAGE_PROPERTY) == 0)
 		{
 			cbResult = sizeof(DWORD);
 		}
@@ -1183,8 +1177,16 @@ __in    DWORD   dwFlags)
 		{
 			cbResult = sizeof(DWORD);
 		}
-		else if(wcscmp(pszProperty, NCRYPT_LENGTH_PROPERTY) == 0)
+		else if(wcscmp(pszProperty, NCRYPT_LENGTH_PROPERTY) == 0 ||
+				wcscmp(pszProperty, NCRYPT_KEY_USAGE_PROPERTY) == 0 ||
+				wcscmp(pszProperty, NCRYPT_BLOCK_LENGTH_PROPERTY) == 0)
 		{
+			if (!m_isFinalized)
+			{
+				Trace(TRACE_LEVEL_ERROR, L"Key is not finalized");
+				dwError = NTE_INVALID_HANDLE; // same error code returned than CNG
+				__leave;
+			}
 			cbResult = sizeof(DWORD);
 		}
 		else if(wcscmp(pszProperty, NCRYPT_LENGTHS_PROPERTY) == 0)
@@ -1233,10 +1235,16 @@ __in    DWORD   dwFlags)
 		{
 			*(DWORD *)pbOutput = (m_dwLegacyKeySpec == AT_SIGNATURE ? NCRYPT_ALLOW_SIGNING_FLAG : NCRYPT_ALLOW_ALL_USAGES);
 		}
+		else if (wcscmp(pszProperty, NCRYPT_LENGTHS_PROPERTY) == 0)
+		{
+			((NCRYPT_SUPPORTED_LENGTHS*)pbOutput)->dwMinLength = 1024;
+			((NCRYPT_SUPPORTED_LENGTHS*)pbOutput)->dwDefaultLength = 2048;
+			((NCRYPT_SUPPORTED_LENGTHS*)pbOutput)->dwMaxLength = 3072;
+			((NCRYPT_SUPPORTED_LENGTHS*)pbOutput)->dwIncrement = 1024;
+		}
 		else if(wcscmp(pszProperty, NCRYPT_BLOCK_LENGTH_PROPERTY) == 0 ||
 				wcscmp(pszProperty, NCRYPT_KEY_TYPE_PROPERTY) == 0 || 
-				wcscmp(pszProperty, NCRYPT_LENGTH_PROPERTY) == 0 ||
-				wcscmp(pszProperty, NCRYPT_LENGTHS_PROPERTY) == 0)
+				wcscmp(pszProperty, NCRYPT_LENGTH_PROPERTY) == 0)
 		{
 			dwError = BCryptGetProperty( m_key, pszProperty, pbOutput, cbOutput, pcbResult, dwFlags);
 			if (dwError)
