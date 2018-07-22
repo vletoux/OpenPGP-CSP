@@ -1190,6 +1190,66 @@ _Success_(return) BOOL CspContainer::GetProvParam(
 	return fReturn;
 }
 
+BOOL CspContainer::GetUserStore(__in PTSTR szProviderName, __out HCERTSTORE* phStore)
+{
+	BOOL fReturn = FALSE;
+	DWORD dwError = 0;
+	HCERTSTORE hStore = NULL;
+	BOOL fEndTransaction = FALSE;
+	BOOL fAuthenticated = FALSE;
+	__try
+	{
+		if (!m_Card)
+		{
+			Trace(TRACE_LEVEL_ERROR, L"defensive programming for user store");
+			dwError = NTE_NOT_SUPPORTED;
+			__leave;
+		}
+		hStore = CertOpenStore(CERT_STORE_PROV_MEMORY,0,0,0,NULL);
+		if (!hStore)
+		{
+			dwError = GetLastError();
+			Trace(TRACE_LEVEL_ERROR, L"CertOpenStore failed 0x%08X", dwError);
+			__leave;
+		}
+		if (!StartTransaction())
+		{
+			dwError = GetLastError();
+			Trace(TRACE_LEVEL_ERROR, L"StartTransaction failed 0x%08X", dwError);
+			__leave;
+		}
+		fEndTransaction = TRUE;
+		DWORD dwMaxContainer = m_Card->GetMaxContainer();
+		for(DWORD dwI = 0; dwI < dwMaxContainer; dwI++)
+		{
+			CHAR szContainer[MAX_CONTAINER_NAME];
+			BYTE pbBuffer[4096];
+			DWORD dwSize = sizeof(pbBuffer);
+			DWORD dwKeySpec = AT_SIGNATURE;
+			if (m_Card->GetContainerName(dwI, szContainer)
+				&& m_Card->GetKeySpec(dwI, &dwKeySpec)
+				&& m_Card->GetCertificate(dwI, pbBuffer, &dwSize))
+			{
+				PopulateUserStoreFromContainerName(hStore, szProviderName, TRUE, szContainer, dwKeySpec, pbBuffer, dwSize);
+			}
+		}
+		*phStore = hStore;
+		fReturn = TRUE;
+	}
+	__finally
+	{
+		if (!fReturn)
+		{
+			if (hStore) 
+				CertCloseStore(hStore, 0);
+		}
+		if (fEndTransaction)
+			EndTransaction(0, fAuthenticated);
+	}
+	SetLastError(dwError);
+	return fReturn;
+}
+
 BOOL CspContainer::SetProvParam(
 						__in    DWORD dwParam,
 						__in     CONST  BYTE *pbData,

@@ -206,6 +206,7 @@ private :
 				
 				BOOL AskForSmartCardReader();
 				
+				BOOL GetUserStore(__in PTSTR szProviderName, __out HCERTSTORE* phStore);
 				BOOL EnumerateContainer(_Out_writes_bytes_to_opt_(*pdwDataLen, *pdwDataLen) PSTR szContainer, __inout PDWORD pdwDataLen, DWORD dwFlags);
 
 				HWND GetParentHwnd();

@@ -611,67 +611,7 @@ BOOL ExtractReaderAndContainerFromGeneralNameW(__in PCWSTR szSubmittedContainer,
 ////////////////////////////////////////////////////////////////////////////
 
 
-BOOL BaseContainer::GetUserStore(__in PTSTR szProviderName, __out HCERTSTORE* phStore)
-{
-	BOOL fReturn = FALSE;
-	DWORD dwError = 0;
-	HCERTSTORE hStore = NULL;
-	BOOL fEndTransaction = FALSE;
-	BOOL fAuthenticated = FALSE;
-	__try
-	{
-		if (!m_Card)
-		{
-			Trace(TRACE_LEVEL_ERROR, L"defensive programming for user store");
-			dwError = NTE_NOT_SUPPORTED;
-			__leave;
-		}
-		hStore = CertOpenStore(CERT_STORE_PROV_MEMORY,0,0,0,NULL);
-		if (!hStore)
-		{
-			dwError = GetLastError();
-			Trace(TRACE_LEVEL_ERROR, L"CertOpenStore failed 0x%08X", dwError);
-			__leave;
-		}
-		if (!StartTransaction())
-		{
-			dwError = GetLastError();
-			Trace(TRACE_LEVEL_ERROR, L"StartTransaction failed 0x%08X", dwError);
-			__leave;
-		}
-		fEndTransaction = TRUE;
-		DWORD dwMaxContainer = m_Card->GetMaxContainer();
-		for(DWORD dwI = 0; dwI < dwMaxContainer; dwI++)
-		{
-			CHAR szContainer[MAX_CONTAINER_NAME];
-			BYTE pbBuffer[4096];
-			DWORD dwSize = sizeof(pbBuffer);
-			DWORD dwKeySpec = AT_SIGNATURE;
-			if (m_Card->GetContainerName(dwI, szContainer)
-				&& m_Card->GetKeySpec(dwI, &dwKeySpec)
-				&& m_Card->GetCertificate(dwI, pbBuffer, &dwSize))
-			{
-				PopulateUserStoreFromContainerName(hStore, szProviderName, szContainer, dwKeySpec, pbBuffer, dwSize);
-			}
-		}
-		*phStore = hStore;
-		fReturn = TRUE;
-	}
-	__finally
-	{
-		if (!fReturn)
-		{
-			if (hStore) 
-				CertCloseStore(hStore, 0);
-		}
-		if (fEndTransaction)
-			EndTransaction(0, fAuthenticated);
-	}
-	SetLastError(dwError);
-	return fReturn;
-}
-
-BOOL BaseContainer::PopulateUserStoreFromContainerName(__in HCERTSTORE hStore, __in PTSTR szProviderName, __in PSTR szContainer, __in DWORD dwKeySpec, __in PBYTE pbData, __in DWORD dwSize)
+BOOL BaseContainer::PopulateUserStoreFromContainerName(__in HCERTSTORE hStore, __in PTSTR szProviderName, __in BOOL IsCSP, __in PSTR szContainer, __in DWORD dwKeySpec, __in PBYTE pbData, __in DWORD dwSize)
 {
 	BOOL fReturn = FALSE;
 	DWORD dwError = 0;
@@ -691,11 +631,11 @@ BOOL BaseContainer::PopulateUserStoreFromContainerName(__in HCERTSTORE hStore, _
 		ZeroMemory(&propInfo,sizeof(propInfo));
 		propInfo.pwszContainerName = szWideContainerName;
 		propInfo.pwszProvName = szProviderName;
-		propInfo.dwProvType = PROV_RSA_FULL;
+		propInfo.dwProvType = (IsCSP ? PROV_RSA_FULL : 0);
 		propInfo.dwFlags = 0;
 		propInfo.cProvParam = 0;
 		propInfo.rgProvParam = 0;
-		propInfo.dwKeySpec = dwKeySpec;
+		propInfo.dwKeySpec = (IsCSP ? dwKeySpec : CERT_NCRYPT_KEY_SPEC);
 		if (!CertSetCertificateContextProperty(pCertContext,CERT_KEY_PROV_INFO_PROP_ID,
 			0,&propInfo))
 		{

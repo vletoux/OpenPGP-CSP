@@ -159,5 +159,5 @@ private :
 	KspKey* LocateKey(__in    NCRYPT_KEY_HANDLE hKey);
 	KspEnumNCryptKeyName* BuildEnumData(__in_opt LPCWSTR pszScope);
 	BOOL GetUserStoreWithAllCard(__out HCERTSTORE* phStore);
-
+	GUID m_LastGUIDSeen;
 };

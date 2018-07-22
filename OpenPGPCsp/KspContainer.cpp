@@ -39,6 +39,7 @@ KspContainer::KspContainer()
 {
 	m_hWnd = 0;
 	m_kspcontainers.push_front(this);
+	ZeroMemory(&m_LastGUIDSeen, sizeof(GUID));
 }
 
 KspContainer::~KspContainer()
@@ -254,6 +255,10 @@ _Success_(return) BOOL KspContainer::GetProviderProperty(
 		{
 			* pcbResult = sizeof(HCERTSTORE);
 		}
+		else if(wcscmp(pszProperty, NCRYPT_ROOT_CERTSTORE_PROPERTY) == 0)
+		{
+			* pcbResult = sizeof(HCERTSTORE);
+		}
 		else if(wcscmp(pszProperty, NCRYPT_IMPL_TYPE_PROPERTY) == 0)
 		{
 			* pcbResult = sizeof(DWORD);
@@ -269,6 +274,10 @@ _Success_(return) BOOL KspContainer::GetProviderProperty(
 		else if(wcscmp(pszProperty, NCRYPT_VERSION_PROPERTY) == 0)
 		{
 			* pcbResult = sizeof(DWORD);
+		}
+		else if(wcscmp(pszProperty, NCRYPT_SMARTCARD_GUID_PROPERTY) == 0)
+		{
+			* pcbResult = sizeof(GUID);
 		}
 		else
 		{
@@ -309,6 +318,18 @@ _Success_(return) BOOL KspContainer::GetProviderProperty(
 			{
 			}
 		}
+		else if(wcscmp(pszProperty, NCRYPT_ROOT_CERTSTORE_PROPERTY) == 0)
+		{
+			HCERTSTORE hStore = NULL;
+			hStore = CertOpenStore(CERT_STORE_PROV_MEMORY,0,0,0,NULL);
+			if (!hStore)
+			{
+				dwError = GetLastError();
+				Trace(TRACE_LEVEL_ERROR, L"CertOpenStore failed 0x%08X", dwError);
+				__leave;
+			}
+			*(HCERTSTORE *)pbOutput = hStore;
+		}
 		else if(wcscmp(pszProperty, NCRYPT_IMPL_TYPE_PROPERTY) == 0)
 		{
             *(DWORD *)pbOutput = NCRYPT_IMPL_HARDWARE_FLAG;
@@ -324,6 +345,11 @@ _Success_(return) BOOL KspContainer::GetProviderProperty(
 		else if(wcscmp(pszProperty, NCRYPT_VERSION_PROPERTY) == 0)
 		{
 			*(DWORD *)pbOutput =1;
+		}
+		else if(wcscmp(pszProperty, NCRYPT_SMARTCARD_GUID_PROPERTY) == 0)
+		{
+			//requested by logon ! But on a provider property on not a key one
+			RtlCopyMemory(pbOutput, &m_LastGUIDSeen, sizeof(GUID));
 		}
 		fReturn = TRUE;
 	}
@@ -369,16 +395,19 @@ _Success_(return) BOOL KspContainer::SetProviderProperty(__in    LPCWSTR pszProp
 		if (wcscmp(pszProperty, NCRYPT_WINDOW_HANDLE_PROPERTY) == 0)
 		{
 			m_hWnd = *((HWND*)pbInput);
-			fReturn = TRUE;
 		}
 		else if (wcscmp(pszProperty, NCRYPT_USE_CONTEXT_PROPERTY) == 0)
 		{
-			fReturn = TRUE;
+		}
+		else if (wcscmp(pszProperty, NCRYPT_READER_PROPERTY) == 0)
+		{
 		}
 		else
 		{
 			dwError = NTE_NOT_SUPPORTED;
+			__leave;
 		}
+		fReturn = TRUE;
 	}
 	__finally
 	{
@@ -603,6 +632,7 @@ KspEnumNCryptKeyName* KspContainer::BuildEnumData(__in_opt LPCWSTR pszScope)
 					returnValue->names[returnValue->dwNumberOfNCryptKeyName].pszName = returnValue->szContainerName[returnValue->dwNumberOfNCryptKeyName];
 					MultiByteToWideChar(CP_ACP, 0, szContainer, -1, returnValue->szContainerName[returnValue->dwNumberOfNCryptKeyName], (int)(strlen(szContainer) + 1 ) * 2);
 					returnValue->dwNumberOfNCryptKeyName++;
+					m_Card->GetCardGUID(&m_LastGUIDSeen);
 				}
 			}
 			delete m_Card;
@@ -652,7 +682,7 @@ _Success_(return) BOOL KspContainer::EnumKeys(
 		}
 		if (!*ppEnumState)
 		{
-			*ppEnumState = KspContainer::BuildEnumData(pszScope);
+			*ppEnumState = BuildEnumData(pszScope);
 			if (!*ppEnumState )
 			{
 				dwError = GetLastError();
@@ -1067,7 +1097,7 @@ BOOL KspContainer::GetUserStoreWithAllCard(__out HCERTSTORE* phStore)
 					&& m_Card->GetKeySpec(dwI, &dwKeySpec)
 					&& m_Card->GetCertificate(dwI, pbBuffer, &dwSize))
 				{
-					PopulateUserStoreFromContainerName(hStore, TEXT(KSPNAME), szContainer, dwKeySpec, pbBuffer, dwSize);
+					PopulateUserStoreFromContainerName(hStore, TEXT(KSPNAME), FALSE, szContainer, dwKeySpec, pbBuffer, dwSize);
 				}
 			}
 			delete m_Card;
@@ -1259,10 +1289,20 @@ __in    DWORD   dwFlags)
 		}
 		else if (wcscmp(pszProperty, NCRYPT_LENGTHS_PROPERTY) == 0)
 		{
-			((NCRYPT_SUPPORTED_LENGTHS*)pbOutput)->dwMinLength = 1024;
-			((NCRYPT_SUPPORTED_LENGTHS*)pbOutput)->dwDefaultLength = 2048;
-			((NCRYPT_SUPPORTED_LENGTHS*)pbOutput)->dwMaxLength = 3072;
 			((NCRYPT_SUPPORTED_LENGTHS*)pbOutput)->dwIncrement = 1024;
+			if (m_isFinalized)
+			{
+				m_Card->GetKeyLength(&((NCRYPT_SUPPORTED_LENGTHS*)pbOutput)->dwDefaultLength,
+					&((NCRYPT_SUPPORTED_LENGTHS*)pbOutput)->dwMinLength,
+					&((NCRYPT_SUPPORTED_LENGTHS*)pbOutput)->dwMaxLength);
+			}
+			// being called with a fake creation by CNG middleware to get the key length before it is being created
+			else
+			{
+				((NCRYPT_SUPPORTED_LENGTHS*)pbOutput)->dwMinLength = 1024;
+				((NCRYPT_SUPPORTED_LENGTHS*)pbOutput)->dwDefaultLength = 2048;
+				((NCRYPT_SUPPORTED_LENGTHS*)pbOutput)->dwMaxLength = 3072;
+			}
 		}
 		else if(wcscmp(pszProperty, NCRYPT_BLOCK_LENGTH_PROPERTY) == 0)
 		{
@@ -1315,6 +1355,7 @@ __in    DWORD   dwFlags)
 {
 	BOOL fReturn = FALSE;
 	DWORD dwError = 0;
+	CHAR szAnsiPin[255];
 	__try
 	{
 		if((pszProperty == NULL)||
@@ -1411,6 +1452,22 @@ __in    DWORD   dwFlags)
 				free(m_szPinPROMPT);
 			m_szPinPROMPT = DuplicateUnicodeString((PWSTR) pbInput);
 		}
+		else if (wcscmp(pszProperty, NCRYPT_PIN_PROPERTY) == 0)
+		{
+			if (m_Card != NULL)
+			{
+				DWORD dwPINType = (m_dwLegacyKeySpec == AT_SIGNATURE ? PP_SIGNATURE_PIN : PP_KEYEXCHANGE_PIN);
+				Trace(TRACE_LEVEL_VERBOSE, L"set pin %d", dwPINType);
+				WideCharToMultiByte(CP_ACP, 0, (PWSTR) pbInput, -1, szAnsiPin, sizeof(szAnsiPin), NULL, NULL);
+				fReturn = SetPin(dwPINType, szAnsiPin);
+				if (!fReturn)
+				{
+					dwError = GetLastError();
+					Trace(TRACE_LEVEL_ERROR, L"SetPin failed 0x%08X", dwError);
+					__leave;
+				}
+			}
+		}
 		else
 		{
 			Trace(TRACE_LEVEL_ERROR, L"Invalid property %s", pszProperty);
@@ -1421,6 +1478,7 @@ __in    DWORD   dwFlags)
 	}
 	__finally
 	{
+		SecureZeroMemory(szAnsiPin, sizeof(szAnsiPin));
 	}
 	SetLastError(dwError);
 	return fReturn;
