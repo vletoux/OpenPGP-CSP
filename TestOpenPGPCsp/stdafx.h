@@ -26,6 +26,7 @@
 #include <Wincrypt.h>
 #include <cryptuiapi.h>
 #include <CryptDlg.h>
+#include <wincred.h>
 
 #define CSPNAME "OpenPGP CSP"
 #define KSPNAME "OpenPGP KSP"

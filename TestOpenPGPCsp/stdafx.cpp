@@ -22,3 +22,4 @@
 #pragma comment(lib, "Cryptui")
 #pragma comment(lib, "bcrypt")
 #pragma comment(lib, "ncrypt")
+#pragma comment(lib, "Credui")

@@ -1122,13 +1122,120 @@ void testCreateKeyCNG()
 	}
 }
 
+typedef enum _KERB_LOGON_SUBMIT_TYPE {
+  KerbInteractiveLogon        ,
+  KerbSmartCardLogon          ,
+  KerbWorkstationUnlockLogon  ,
+  KerbSmartCardUnlockLogon    ,
+  KerbProxyLogon              ,
+  KerbTicketLogon             ,
+  KerbTicketUnlockLogon       ,
+  KerbS4ULogon                ,
+  KerbCertificateLogon        ,
+  KerbCertificateS4ULogon     ,
+  KerbCertificateUnlockLogon  ,
+  KerbNoElevationLogon        ,
+  KerbLuidLogon
+} KERB_LOGON_SUBMIT_TYPE, *PKERB_LOGON_SUBMIT_TYPE;
+
+typedef struct _LSA_UNICODE_STRING {
+    USHORT Length;
+    USHORT MaximumLength;
+#ifdef MIDL_PASS
+    [size_is(MaximumLength/2), length_is(Length/2)]
+#endif // MIDL_PASS
+    PWSTR  Buffer;
+} UNICODE_STRING, *PLSA_UNICODE_STRING;
+
+typedef struct _KERB_SMARTCARD_CSP_INFO {
+  DWORD dwCspInfoLen;
+  DWORD MessageType;
+  union {
+    PVOID   ContextInformation;
+    ULONG64 SpaceHolderForWow64;
+  };
+  DWORD flags;
+  DWORD KeySpec;
+  ULONG nCardNameOffset;
+  ULONG nReaderNameOffset;
+  ULONG nContainerNameOffset;
+  ULONG nCSPNameOffset;
+  TCHAR bBuffer;
+} KERB_SMARTCARD_CSP_INFO, *PKERB_SMARTCARD_CSP_INFO;
+
+typedef struct _KERB_CERTIFICATE_LOGON {
+  KERB_LOGON_SUBMIT_TYPE MessageType;
+  UNICODE_STRING         DomainName;
+  UNICODE_STRING         UserName;
+  UNICODE_STRING         Pin;
+  ULONG                  Flags;
+  ULONG                  CspDataLength;
+  PUCHAR                 CspData;
+} KERB_CERTIFICATE_LOGON, *PKERB_CERTIFICATE_LOGON;
+
+void TestLogin()
+{
+	BOOL save = false;
+	DWORD authPackage = 0;
+	LPVOID authBuffer;
+	ULONG authBufferSize = 0;
+	CREDUI_INFO credUiInfo = {0};
+	KERB_CERTIFICATE_LOGON* pCertLogon;
+	KERB_SMARTCARD_CSP_INFO *cspData;
+	CoInitializeEx(NULL,COINIT_APARTMENTTHREADED); 
+
+	credUiInfo.pszCaptionText = TEXT("My caption");
+	credUiInfo.pszMessageText = TEXT("My message");
+	credUiInfo.cbSize = sizeof(credUiInfo);
+
+	DWORD result = 0;
+	result = CredUIPromptForWindowsCredentials(&(credUiInfo), 0, &(authPackage), 
+		NULL, 0, &authBuffer, &authBufferSize, &(save), 0);
+	if (result == ERROR_SUCCESS)
+	{
+		pCertLogon = (KERB_CERTIFICATE_LOGON*) authBuffer;
+		cspData = (PKERB_SMARTCARD_CSP_INFO) ((LONG_PTR)authBuffer + pCertLogon->CspData);
+		PWSTR szCSP = &cspData->bBuffer + cspData->nCSPNameOffset;
+		PWSTR szCardNameOffset = &cspData->bBuffer + cspData->nCardNameOffset;
+		PWSTR szContainerNameOffset = &cspData->bBuffer + cspData->nContainerNameOffset;
+		PWSTR szReaderNameOffset = &cspData->bBuffer + cspData->nReaderNameOffset;
+		int i = 0;
+		/**BOOL fReturn = FALSE;
+		LSA_HANDLE hLsa;
+		MSV1_0_INTERACTIVE_PROFILE *Profile;
+		ULONG ProfileLen;
+		LSA_STRING Origin = { (USHORT)strlen("MYTEST"), (USHORT)sizeof("MYTEST"), "MYTEST" };
+		TOKEN_SOURCE Source = { "TEST", { 0, 101 } };
+		QUOTA_LIMITS Quota = {0};
+		LUID Luid;
+		NTSTATUS err,stat;
+		HANDLE Token;
+		err = LsaConnectUntrusted(&hLsa);
+	
+		err = LsaLogonUser(hLsa, &Origin, (SECURITY_LOGON_TYPE)  Interactive , authPackage, authBuffer,authBufferSize,NULL, &Source, (PVOID*)&Profile, &ProfileLen, &Luid, &Token, &Quota, &stat);
+	
+		LsaDeregisterLogonProcess(hLsa);
+		if (err)
+		{
+			SetLastError(LsaNtStatusToWinError(err));
+		}
+		else
+		{
+			fReturn = TRUE;
+			LsaFreeReturnBuffer(Profile);
+			CloseHandle(Token);
+		
+		}*/
+	}
+}
 
 int _tmain(int argc, _TCHAR* argv[])
 {
 
 	//testKsp();
+	TestLogin();
 	//testCsp();
-	testCreateKeyCNG();
+	//testCreateKeyCNG();
 	//testImportCNG();
 	return 0;
 }
