@@ -59,6 +59,7 @@ class Card
 		virtual BOOL SaveKey(__in DWORD dwKey, __in ALG_ID Algid, __in_bcount(dwKeySize) PBYTE pBlob, __in DWORD dwKeySize) = 0;
 		virtual BOOL SetContainerName(PSTR szContainer, DWORD dwKeyId) = 0;
 		virtual BOOL GetKeyLength(__out PDWORD pdwDefaultLen, __out PDWORD pdwMinLen, __out PDWORD pdwMaxLen) = 0;
+		virtual BOOL GetCardGUID(__inout GUID* pGuid) = 0;
 	protected:
 		Card()
 		{

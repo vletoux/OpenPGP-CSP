@@ -119,6 +119,7 @@ public:
 	virtual BOOL SaveKey(__in DWORD dwKey, __in ALG_ID Algid, __in_bcount(dwKeySize) PBYTE pBlob, __in DWORD dwKeySize);
 	virtual BOOL SetContainerName(PSTR szContainer, DWORD dwKeyId);
 	virtual BOOL GetKeyLength(__out PDWORD pdwDefaultLen, __out PDWORD pdwMinLen, __out PDWORD pdwMaxLen);
+	virtual BOOL GetCardGUID(__inout GUID* pGuid);
 protected:
 	BOOL CheckForAlias(PCSTR szContainer, __out PDWORD dwKeyId);
 	BOOL RemoveAlias(DWORD dwKeyId);

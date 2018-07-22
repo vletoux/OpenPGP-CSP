@@ -2149,3 +2149,13 @@ BOOL OpenPGPCardv2::GetKeyLength(__out PDWORD pdwDefaultLen, __out PDWORD pdwMin
 	*pdwMaxLen = 3072;
 	return TRUE;
 }
+
+// {12F6CEE4-759C-401B-BB9F-F3E4E124A7D0}
+static const GUID GUID_OPENPGP_DEFAULT = 
+{ 0x12f6cee4, 0x759c, 0x401b, { 0xbb, 0x9f, 0xf3, 0xe4, 0xe1, 0x24, 0xa7, 0xd0 } };
+
+BOOL OpenPGPCardv2::GetCardGUID(__inout GUID* pGuid)
+{
+	RtlCopyMemory(pGuid, &(GUID_OPENPGP_DEFAULT), sizeof(GUID));
+	return TRUE;
+}
