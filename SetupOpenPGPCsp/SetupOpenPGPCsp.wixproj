@@ -61,7 +61,7 @@
   </ItemGroup>
   <Import Project="$(WixTargetsPath)" />
   <PropertyGroup>
-    <PostBuildEvent>IF /I "$(ConfigurationName)" == "Release" "C:\Program Files (x86)\Windows Kits\8.0\bin\x86\signtool.exe" sign  /d "OpenPGP CSP" /f $(SolutionDir)\CodeSigning\certificate.pfx /p vletoux  /t  http://timestamp.comodoca.com/authenticode "$(TargetDir)SetupOpenPGPCsp.msi"</PostBuildEvent>
+    <PostBuildEvent>IF /I "$(ConfigurationName)" == "Release" "C:\Program Files (x86)\Windows Kits\8.0\bin\x86\signtool.exe" sign  /d "OpenPGP CSP" /ac "$(SolutionDir)\CodeSigning\DigiCert High Assurance EV Root CA.crt" /tr http://timestamp.digicert.com /td sha256 /fd sha256 /n "Ping Castle SAS" "$(TargetDir)SetupOpenPGPCsp.msi"</PostBuildEvent>
   </PropertyGroup>
   <!--
 	To modify your build process, add your task inside one of the targets below and uncomment it.

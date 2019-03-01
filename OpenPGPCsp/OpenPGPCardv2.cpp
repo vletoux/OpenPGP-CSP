@@ -1042,7 +1042,8 @@ BOOL OpenPGPCardv2::DecryptOperation(__in PBYTE pbEncryptedData, __in DWORD cbEn
 	DWORD dwError = 0;
 	PBYTE pbTempDecryptedData = NULL;
 	DWORD dwCmdSize = 0, dwResponseSize;
-	BYTE pbCmd[6 + 256 + 256] = {0x00, 
+	PBYTE pbCmd = NULL;
+	BYTE pbCmdInit[] = {0x00, 
 		0x2A,
 		0x80,
 		0x86,
@@ -1051,6 +1052,21 @@ BOOL OpenPGPCardv2::DecryptOperation(__in PBYTE pbEncryptedData, __in DWORD cbEn
 	DWORD dwI;
 	__try
 	{
+		if (cbEncryptedData >= 256 && !m_fExtentedLeLcFields)
+		{
+			//TODO - implemented command chaining
+			Trace(TRACE_LEVEL_ERROR, L"Chaining not implemented");
+			dwError = SCARD_E_UNSUPPORTED_FEATURE;
+			__leave;
+		}
+		pbCmd = (PBYTE) malloc( 6 + 256 + cbEncryptedData);
+		if (!pbCmd)
+		{
+			Trace(TRACE_LEVEL_ERROR, L"SCARD_E_NO_MEMORY");
+			dwError = SCARD_E_NO_MEMORY;
+			__leave;
+		}
+		memcpy(pbCmd, pbCmdInit, sizeof(pbCmdInit));
 		// check the buffer size
 		dwCmdSize = 5;
 		if (m_fExtentedLeLcFields)
@@ -1102,6 +1118,10 @@ BOOL OpenPGPCardv2::DecryptOperation(__in PBYTE pbEncryptedData, __in DWORD cbEn
 		{
 			SecureZeroMemory(pbTempDecryptedData, dwResponseSize);
 			free(pbTempDecryptedData);
+		}
+		if (pbCmd)
+		{
+			free(pbCmd);
 		}
 	}
 	Trace(TRACE_LEVEL_VERBOSE, L"dwError = 0x%08X",dwError);

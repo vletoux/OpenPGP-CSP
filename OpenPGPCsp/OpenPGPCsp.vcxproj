@@ -32,7 +32,7 @@
     <PlatformToolset Condition="'$(VCTargetsPath11)' != ''">v110</PlatformToolset>
     <PlatformToolset Condition="'$(VCTargetsPath12)' != ''">v120</PlatformToolset>
     <PlatformToolset Condition="'$(VCTargetsPath14)' != ''">v140</PlatformToolset>
-	<PlatformToolset Condition="'$(VCTargetsPath15)' != ''">v141</PlatformToolset>
+    <PlatformToolset Condition="'$(VCTargetsPath15)' != ''">v141</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -42,7 +42,7 @@
     <PlatformToolset Condition="'$(VCTargetsPath11)' != ''">v110</PlatformToolset>
     <PlatformToolset Condition="'$(VCTargetsPath12)' != ''">v120</PlatformToolset>
     <PlatformToolset Condition="'$(VCTargetsPath14)' != ''">v140</PlatformToolset>
-	<PlatformToolset Condition="'$(VCTargetsPath15)' != ''">v141</PlatformToolset>
+    <PlatformToolset Condition="'$(VCTargetsPath15)' != ''">v141</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -52,7 +52,7 @@
     <PlatformToolset Condition="'$(VCTargetsPath11)' != ''">v110</PlatformToolset>
     <PlatformToolset Condition="'$(VCTargetsPath12)' != ''">v120</PlatformToolset>
     <PlatformToolset Condition="'$(VCTargetsPath14)' != ''">v140</PlatformToolset>
-	<PlatformToolset Condition="'$(VCTargetsPath15)' != ''">v141</PlatformToolset>
+    <PlatformToolset Condition="'$(VCTargetsPath15)' != ''">v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -63,7 +63,7 @@
     <PlatformToolset Condition="'$(VCTargetsPath11)' != ''">v110</PlatformToolset>
     <PlatformToolset Condition="'$(VCTargetsPath12)' != ''">v120</PlatformToolset>
     <PlatformToolset Condition="'$(VCTargetsPath14)' != ''">v140</PlatformToolset>
-	<PlatformToolset Condition="'$(VCTargetsPath15)' != ''">v141</PlatformToolset>
+    <PlatformToolset Condition="'$(VCTargetsPath15)' != ''">v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -118,16 +118,11 @@
       <ModuleDefinitionFile>OpenPGPCsp.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>if not exist $(SolutionDir)\CodeSigning\certificate.pfx goto :exit
-
-@echo ================
+      <Command>@echo ================
 @echo sign binaries
 @echo ================
 
-IF "$(ConfigurationName)" == "Release" "C:\Program Files (x86)\Windows Kits\8.0\bin\x86\signtool.exe" sign  /d "OpenPGP CSP" /ac $(SolutionDir)\CodeSigning\addtrustexternalcaroot_kmod.crt /f $(SolutionDir)\CodeSigning\certificate.pfx /p vletoux /t http://timestamp.comodoca.com "$(TargetPath)"
-IF "$(ConfigurationName)" == "Release" "C:\Program Files (x86)\Windows Kits\8.0\bin\x86\signtool.exe" sign  /d "OpenPGP CSP" /ac $(SolutionDir)\CodeSigning\addtrustexternalcaroot_kmod.crt /f $(SolutionDir)\CodeSigning\certificate.pfx /p vletoux /fd sha256 /tr http://timestamp.comodoca.com/?td=sha256 /td sha256 /as "$(TargetPath)"
-IF "$(ConfigurationName)" NEQ "Release" "C:\Program Files (x86)\Windows Kits\8.0\bin\x86\signtool.exe" sign  /d "OpenPGP CSP" /ac $(SolutionDir)\CodeSigning\addtrustexternalcaroot_kmod.crt /f $(SolutionDir)\CodeSigning\certificate.pfx /p vletoux "$(TargetPath)"
-IF "$(ConfigurationName)" NEQ "Release" "C:\Program Files (x86)\Windows Kits\8.0\bin\x86\signtool.exe" sign  /d "OpenPGP CSP" /ac $(SolutionDir)\CodeSigning\addtrustexternalcaroot_kmod.crt /f $(SolutionDir)\CodeSigning\certificate.pfx /p vletoux /fd sha256  /as "$(TargetPath)"
+"C:\Program Files (x86)\Windows Kits\8.0\bin\x86\signtool.exe" sign  /d "OpenPGP CSP" /ac "$(SolutionDir)\CodeSigning\DigiCert High Assurance EV Root CA.crt" /tr http://timestamp.digicert.com /td sha256 /fd sha256 /n "Ping Castle SAS" "$(TargetPath)"
 
 @echo Done signing
 :exit
@@ -149,16 +144,11 @@ IF "$(ConfigurationName)" NEQ "Release" "C:\Program Files (x86)\Windows Kits\8.0
       <ModuleDefinitionFile>OpenPGPCsp.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>if not exist $(SolutionDir)\CodeSigning\certificate.pfx goto :exit
-
-@echo ================
+      <Command>@echo ================
 @echo sign binaries
 @echo ================
 
-IF "$(ConfigurationName)" == "Release" "C:\Program Files (x86)\Windows Kits\8.0\bin\x86\signtool.exe" sign  /d "OpenPGP CSP" /ac $(SolutionDir)\CodeSigning\addtrustexternalcaroot_kmod.crt /f $(SolutionDir)\CodeSigning\certificate.pfx /p vletoux /t http://timestamp.comodoca.com "$(TargetPath)"
-IF "$(ConfigurationName)" == "Release" "C:\Program Files (x86)\Windows Kits\8.0\bin\x86\signtool.exe" sign  /d "OpenPGP CSP" /ac $(SolutionDir)\CodeSigning\addtrustexternalcaroot_kmod.crt /f $(SolutionDir)\CodeSigning\certificate.pfx /p vletoux /fd sha256 /tr http://timestamp.comodoca.com/?td=sha256 /td sha256 /as "$(TargetPath)"
-IF "$(ConfigurationName)" NEQ "Release" "C:\Program Files (x86)\Windows Kits\8.0\bin\x86\signtool.exe" sign  /d "OpenPGP CSP" /ac $(SolutionDir)\CodeSigning\addtrustexternalcaroot_kmod.crt /f $(SolutionDir)\CodeSigning\certificate.pfx /p vletoux "$(TargetPath)"
-IF "$(ConfigurationName)" NEQ "Release" "C:\Program Files (x86)\Windows Kits\8.0\bin\x86\signtool.exe" sign  /d "OpenPGP CSP" /ac $(SolutionDir)\CodeSigning\addtrustexternalcaroot_kmod.crt /f $(SolutionDir)\CodeSigning\certificate.pfx /p vletoux /fd sha256  /as "$(TargetPath)"
+"C:\Program Files (x86)\Windows Kits\8.0\bin\x86\signtool.exe" sign  /d "OpenPGP CSP" /ac "$(SolutionDir)\CodeSigning\DigiCert High Assurance EV Root CA.crt" /tr http://timestamp.digicert.com /td sha256 /fd sha256 /n "Ping Castle SAS" "$(TargetPath)"
 
 @echo Done signing
 :exit
@@ -184,16 +174,11 @@ IF "$(ConfigurationName)" NEQ "Release" "C:\Program Files (x86)\Windows Kits\8.0
       <ModuleDefinitionFile>OpenPGPCsp.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>if not exist $(SolutionDir)\CodeSigning\certificate.pfx goto :exit
-
-@echo ================
+      <Command>@echo ================
 @echo sign binaries
 @echo ================
 
-IF "$(ConfigurationName)" == "Release" "C:\Program Files (x86)\Windows Kits\8.0\bin\x86\signtool.exe" sign  /d "OpenPGP CSP" /ac $(SolutionDir)\CodeSigning\addtrustexternalcaroot_kmod.crt /f $(SolutionDir)\CodeSigning\certificate.pfx /p vletoux /t http://timestamp.comodoca.com "$(TargetPath)"
-IF "$(ConfigurationName)" == "Release" "C:\Program Files (x86)\Windows Kits\8.0\bin\x86\signtool.exe" sign  /d "OpenPGP CSP" /ac $(SolutionDir)\CodeSigning\addtrustexternalcaroot_kmod.crt /f $(SolutionDir)\CodeSigning\certificate.pfx /p vletoux /fd sha256 /tr http://timestamp.comodoca.com/?td=sha256 /td sha256 /as "$(TargetPath)"
-IF "$(ConfigurationName)" NEQ "Release" "C:\Program Files (x86)\Windows Kits\8.0\bin\x86\signtool.exe" sign  /d "OpenPGP CSP" /ac $(SolutionDir)\CodeSigning\addtrustexternalcaroot_kmod.crt /f $(SolutionDir)\CodeSigning\certificate.pfx /p vletoux "$(TargetPath)"
-IF "$(ConfigurationName)" NEQ "Release" "C:\Program Files (x86)\Windows Kits\8.0\bin\x86\signtool.exe" sign  /d "OpenPGP CSP" /ac $(SolutionDir)\CodeSigning\addtrustexternalcaroot_kmod.crt /f $(SolutionDir)\CodeSigning\certificate.pfx /p vletoux /fd sha256  /as "$(TargetPath)"
+"C:\Program Files (x86)\Windows Kits\8.0\bin\x86\signtool.exe" sign  /d "OpenPGP CSP" /ac "$(SolutionDir)\CodeSigning\DigiCert High Assurance EV Root CA.crt" /tr http://timestamp.digicert.com /td sha256 /fd sha256 /n "Ping Castle SAS" "$(TargetPath)"
 
 @echo Done signing
 :exit
@@ -219,16 +204,11 @@ IF "$(ConfigurationName)" NEQ "Release" "C:\Program Files (x86)\Windows Kits\8.0
       <ModuleDefinitionFile>OpenPGPCsp.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>if not exist $(SolutionDir)\CodeSigning\certificate.pfx goto :exit
-
-@echo ================
+      <Command>@echo ================
 @echo sign binaries
 @echo ================
 
-IF "$(ConfigurationName)" == "Release" "C:\Program Files (x86)\Windows Kits\8.0\bin\x86\signtool.exe" sign  /d "OpenPGP CSP" /ac $(SolutionDir)\CodeSigning\comodorsacertificationauthority_kmod.crt /f $(SolutionDir)\CodeSigning\certificate.pfx /p vletoux /t http://timestamp.comodoca.com "$(TargetPath)"
-IF "$(ConfigurationName)" == "Release" "C:\Program Files (x86)\Windows Kits\8.0\bin\x86\signtool.exe" sign  /d "OpenPGP CSP" /ac $(SolutionDir)\CodeSigning\comodorsacertificationauthority_kmod.crt /f $(SolutionDir)\CodeSigning\certificate.pfx /p vletoux /fd sha256 /tr http://timestamp.comodoca.com/?td=sha256 /td sha256 /as "$(TargetPath)"
-IF "$(ConfigurationName)" NEQ "Release" "C:\Program Files (x86)\Windows Kits\8.0\bin\x86\signtool.exe" sign  /d "OpenPGP CSP" /ac $(SolutionDir)\CodeSigning\comodorsacertificationauthority_kmod.crt /f $(SolutionDir)\CodeSigning\certificate.pfx /p vletoux "$(TargetPath)"
-IF "$(ConfigurationName)" NEQ "Release" "C:\Program Files (x86)\Windows Kits\8.0\bin\x86\signtool.exe" sign  /d "OpenPGP CSP" /ac $(SolutionDir)\CodeSigning\comodorsacertificationauthority_kmod.crt /f $(SolutionDir)\CodeSigning\certificate.pfx /p vletoux /fd sha256  /as "$(TargetPath)"
+"C:\Program Files (x86)\Windows Kits\8.0\bin\x86\signtool.exe" sign  /d "OpenPGP CSP" /ac "$(SolutionDir)\CodeSigning\DigiCert High Assurance EV Root CA.crt" /tr http://timestamp.digicert.com /td sha256 /fd sha256 /n "Ping Castle SAS" "$(TargetPath)"
 
 @echo Done signing
 :exit
