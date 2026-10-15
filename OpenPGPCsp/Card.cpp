@@ -217,48 +217,35 @@ DWORD Card::GetData(
 				SW1 = recvbuf[recvlen-2];
 				SW2 = recvbuf[recvlen-1];
 			}
-			if ( ( SW1 == 0x90 ) && ( SW2 == 0x00 ) )
+			if ( (( SW1 == 0x90 ) && ( SW2 == 0x00 )) || (SW1 == 0x61) )
 			{
-				dwDataSize = recvlen-2;
-				*pbResponse = (BYTE*) malloc(dwDataSize);
-				if (! *pbResponse)
+				// append the data of this response: with 61xx the answer comes in several parts
+				DWORD dwChunkSize = recvlen-2;
+				PBYTE pbNewResponse = (BYTE*) realloc(*pbResponse, dwDataSize + dwChunkSize + 1);
+				if (! pbNewResponse)
 				{
 					Trace(TRACE_LEVEL_ERROR, L"SCARD_E_NO_MEMORY");
 					dwReturn = SCARD_E_NO_MEMORY;
 					__leave;
 				}
-				memcpy(*pbResponse, recvbuf, dwDataSize);
-			}
-			else if (SW1 == 0x61)
-			{
-				PBYTE old = *pbResponse;
-				dwDataSize += SW2;
-				if (*pbResponse)
+				*pbResponse = pbNewResponse;
+				memcpy(*pbResponse + dwDataSize, recvbuf, dwChunkSize);
+				dwDataSize += dwChunkSize;
+				if (SW1 == 0x61)
 				{
-					PBYTE old = *pbResponse;
-					*pbResponse = (BYTE*) realloc(*pbResponse, dwDataSize);
-				}
-				else
-				{
-					*pbResponse = (BYTE*) malloc(dwDataSize);
-				}
-				if (! *pbResponse)
-				{
-					Trace(TRACE_LEVEL_ERROR, L"SCARD_E_NO_MEMORY");
-					if (old) free(old);
-					dwReturn = SCARD_E_NO_MEMORY;
-					__leave;
-				}
-				dwGetResponseSize = ARRAYSIZE(pbGetResponse);
-				TraceAPDUIn(pbCmd, dwCmdSize);
-				dwReturn = SCardTransmit(hScard, 
+					pbGetResponse[4] = SW2;
+					dwGetResponseSize = ARRAYSIZE(pbGetResponse);
+					recvlen = sizeof(recvbuf);
+					TraceAPDUIn(pbGetResponse, dwGetResponseSize);
+					dwReturn = SCardTransmit(hScard, 
 									SCARD_PCI_T1, 
 									pbGetResponse, 
 									dwGetResponseSize, 
 									NULL, 
 									recvbuf, 
 									&recvlen);
-				TraceAPDUOut(dwReturn, recvbuf, recvlen);
+					TraceAPDUOut(dwReturn, recvbuf, recvlen);
+				}
 			}
 			else if ( (SW1 == 0x69) && (SW2 == 0x82) )
 			{

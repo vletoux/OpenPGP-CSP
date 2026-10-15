@@ -162,7 +162,8 @@ BOOL find_tlv(__in PBYTE pbData, __in  DWORD dwTlvSearched, __in DWORD dwTotalSi
 		else
 		{
 			dwSize = getTlvSize(pbData + dwOffset,&dwOffset);
-			if (dwTlv != 0x73)
+			// enter the constructed DO: OpenPGP v3 cards return GET DATA 6E / 65 with their outer tag
+			if (dwTlv != 0x73 && dwTlv != 0x6E && dwTlv != 0x65)
 			{
 				dwOffset += dwSize;
 			}
@@ -694,7 +695,10 @@ BOOL OpenPGPCardv2::GetPublicKey(__in DWORD dwKeyId, _Out_writes_bytes_to_opt_(*
 			Trace(TRACE_LEVEL_ERROR, L"ERROR_OUTOFMEMORY");
 			__leave;
 		}
-		DWORD dwExponent = pbExponent[0] * 0x1000000  + pbExponent[1] * 0x10000  + pbExponent[2] * 0x100 + pbExponent[3];
+		// big endian, 3 bytes (01 00 01) on OpenPGP v3 cards, 4 bytes on v2 cards
+		DWORD dwExponent = 0;
+		for (DWORD dwExpI = 0; dwExpI < dwExponentSize && dwExpI < 4; dwExpI++)
+			dwExponent = dwExponent * 0x100 + pbExponent[dwExpI];
 
 		PRSAPUBLICKEYBLOB pbBlob = (PRSAPUBLICKEYBLOB) *ppbPubKey;
 		memset(pbBlob,0,*pdwSize);
@@ -1403,7 +1407,10 @@ DWORD OpenPGPCardv2::CreateKey(DWORD dwKey, DWORD dwBitLen)
 			Trace(TRACE_LEVEL_ERROR, L"SCARD_E_UNEXPECTED 0x82");
 			__leave;
 		}
-		dwExponent = pbExponent[0] * 0x1000000  + pbExponent[1] * 0x10000  + pbExponent[2] * 0x100 + pbExponent[3];
+		// big endian, 3 bytes (01 00 01) on OpenPGP v3 cards, 4 bytes on v2 cards
+		dwExponent = 0;
+		for (DWORD dwExpI = 0; dwExpI < dwExponentSize && dwExpI < 4; dwExpI++)
+			dwExponent = dwExponent * 0x100 + pbExponent[dwExpI];
 		// save in the cache
 		m_fHasKey[dwKey] = TRUE;
 		dwReturn = CreateGenerationDateTime(&dwSecondsSince1970);

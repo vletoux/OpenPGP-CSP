@@ -70,6 +70,10 @@ DWORD OpenPGPCardv3::CheckCapabilities(__in_bcount(dwCardCapabilitiesSize) PBYTE
 
 BOOL OpenPGPCardv3::IsKeyCompatibleWithAlgId(__in DWORD dwKeyId, __in ALG_ID algId)
 {
+	// without MSE, Windows enrollment (which always asks for a sign + decrypt key) can still use
+	// the authentication key: signature works (logon, TLS, S/MIME signing), decryption does not
+	if (!m_fSupportMse && dwKeyId == OPENPGP_KEY_AUTHENTICATION && algId == CALG_RSA_KEYX)
+		return TRUE;
 	if (!m_fSupportMse || dwKeyId == OPENPGP_KEY_SIGNATURE)
 		return (OpenPGPKeys[dwKeyId].aiKeyAlg == algId);
 	if (algId == CALG_RSA_KEYX || algId == CALG_RSA_SIGN)

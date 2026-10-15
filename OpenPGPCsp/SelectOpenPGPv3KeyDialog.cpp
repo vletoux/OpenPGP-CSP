@@ -109,7 +109,7 @@ VOID SelectOpenPGPv3KeyDialog::InitDialog()
 	{
 		if (m_Algid == CALG_RSA_KEYX)
 		{
-			EnableWindow(GetDlgItem(_hwnd, IDC_AUTHENTICATION),FALSE);
+			// the authentication key stays available: it signs (logon) but cannot decrypt
 			EnableWindow(GetDlgItem(_hwnd, IDC_SIGNATURE),FALSE);
 		}
 		else if (m_Algid == CALG_RSA_SIGN)

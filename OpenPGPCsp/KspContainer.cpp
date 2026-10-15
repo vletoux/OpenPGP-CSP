@@ -332,7 +332,7 @@ _Success_(return) BOOL KspContainer::GetProviderProperty(
 		}
 		else if(wcscmp(pszProperty, NCRYPT_IMPL_TYPE_PROPERTY) == 0)
 		{
-            *(DWORD *)pbOutput = NCRYPT_IMPL_HARDWARE_FLAG;
+            *(DWORD *)pbOutput = NCRYPT_IMPL_HARDWARE_FLAG | NCRYPT_IMPL_REMOVABLE_FLAG; // removable: CertEnroll writes the issued certificate to the card
 		}
 		else if(wcscmp(pszProperty, NCRYPT_MAX_NAME_LENGTH_PROPERTY) == 0)
 		{
@@ -1377,6 +1377,8 @@ __in    DWORD   dwFlags)
 				dwError = NTE_INVALID_HANDLE; // same error code returned than CNG
 				__leave;
 			}
+			// the admin PIN may have to be asked: honor the caller's silent flag
+			m_AllowUI = !(dwFlags & NCRYPT_SILENT_FLAG);
 			if (!SaveCertificate(pbInput, cbInput, m_dwLegacyKeySpec))
 			{
 				Trace(TRACE_LEVEL_ERROR, L"SaveCertificate failed 0x%08X", dwError);
