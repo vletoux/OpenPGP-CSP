@@ -250,4 +250,12 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
+  <Target Name="GenerateVersionHeader" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <PowerShellExe Condition=" '$(PowerShellExe)'=='' ">$(WINDIR)\System32\WindowsPowerShell1.0\powershell.exe</PowerShellExe>
+      <VersionScriptPath>$(MSBuildThisFileDirectory)..\GenerateVersion.ps1</VersionScriptPath>
+      <VersionHeaderPath>$(MSBuildThisFileDirectory)..ersion.h</VersionHeaderPath>
+    </PropertyGroup>
+    <Exec Command="&quot;$(PowerShellExe)&quot; -ExecutionPolicy Bypass -File &quot;$(VersionScriptPath)&quot; -outPath &quot;$(VersionHeaderPath)&quot;" StandardOutputImportance="high" />
+  </Target>
 </Project>
