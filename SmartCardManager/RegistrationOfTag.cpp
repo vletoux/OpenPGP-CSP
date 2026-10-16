@@ -150,7 +150,7 @@ BOOL RegisterThisTag(PBYTE pbATR, DWORD dwAtrSize, PTSTR szName)
 		SetLastError(dwError);
 		return FALSE;
 	}
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64)
 	if (!RegisterThisTag(pbATR, dwAtrSize, szName, TEXT("SOFTWARE\\Wow6432Node\\Microsoft\\Cryptography\\Calais\\SmartCards")))
 	{
 		DWORD dwError = GetLastError();
