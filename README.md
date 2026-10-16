@@ -6,7 +6,7 @@ These project should be considered in addition to the [OpenPGP minidriver projec
 
 It has been designed to provide support for the OpenPGP card and especially the possibility to request certificate from the Windows PKI.
 
-![certificate_enrollment_demo](https://raw.githubusercontent.com/vletoux/OpenPGP-CSP/master/GitContent/openpgp_certificate.gif)
+[![certificate_enrollment_demo](https://raw.githubusercontent.com/vletoux/OpenPGP-CSP/master/GitContent/openpgp-csp-demo-poster.jpg)](https://github.com/vletoux/OpenPGP-CSP/raw/master/GitContent/openpgp-csp-demo.mp4)
 
 ## Getting Started
 
