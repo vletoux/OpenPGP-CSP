@@ -1,33 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
   <?include $(sys.SOURCEFILEDIR)include.wxi ?>
-  <Product Id="$(var.ProductCode)" Codepage="1252" Language="0"
-			 Manufacturer="My Smart Logon"
-			 Name="OpenPGP CSP"
-			 Version="!(bind.FileVersion.OpenPGPCSP32dll)"
-			 UpgradeCode="$(var.UpgradeCode)"
-       >
-    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" InstallPrivileges="elevated" Platform="$(var.Platform)" Description="$(var.ProductName)" />
+  <Package Name="OpenPGP CSP" Manufacturer="My Smart Logon" Version="!(bind.FileVersion.OpenPGPCSP32dll)"
+           UpgradeCode="$(var.UpgradeCode)" InstallerVersion="500" Compressed="yes" Scope="perMachine" Language="1033" Codepage="1252">
+    <SummaryInformation Description="OpenPGP CSP" />
 
     <MajorUpgrade
       DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit."/>
 
-    <Condition Message="An administrator must approve or install [ProductName].">
-      Privileged
-    </Condition>
+    <Launch Condition="Privileged" Message="An administrator must approve or install [ProductName]." />
 
-    <Condition Message="These application requires Windows XP SP3 or Windows 2003 SP2 or Windows Vista or Windows Server 2008 or later">
-      <![CDATA[Installed OR ((VersionNT >= 501) AND (ServicePackLevel >= 3)) OR ((VersionNT >= 502) AND (ServicePackLevel >= 2)) OR (VersionNT >= 600)]]>
-    </Condition>
+    <Launch Condition="Installed OR ((VersionNT &gt;= 501) AND (ServicePackLevel &gt;= 3)) OR ((VersionNT &gt;= 502) AND (ServicePackLevel &gt;= 2)) OR (VersionNT &gt;= 600)" Message="These application requires Windows XP SP3 or Windows 2003 SP2 or Windows Vista or Windows Server 2008 or later" />
 
-    <?if $(var.Platform) = x64 ?>
-    <Condition Message="This setup has been design for 64-bit versions of Windows.  Please run the setup on 64-bit Windows or get the 32 bits setup.">
-      VersionNT64
-    </Condition>
+    <?if $(var.Plat) != x86 ?>
+    <Launch Condition="VersionNT64" Message="This setup has been design for 64-bit versions of Windows.  Please run the setup on 64-bit Windows or get the 32 bits setup." />
     <?else?>
-    <Condition Message="This setup has been design for 32-bit versions of Windows.  Please run the setup on 32-bit Windows or get the 64 bits setup.">
-      Not VersionNT64
-    </Condition>
+    <Launch Condition="Not VersionNT64" Message="This setup has been design for 32-bit versions of Windows.  Please run the setup on 32-bit Windows or get the 64 bits setup." />
     <?endif?>
 
     <!-- do not edit the rtf file with word! The installer will be unable to read the license -->
@@ -41,17 +29,10 @@
     <Icon Id="mysmartlogon.ico" SourceFile="mysmartlogon.ico" />
     <Property Id="ARPPRODUCTICON" Value="mysmartlogon.ico" />
 
-    <Directory Id="TARGETDIR" Name="SourceDir">
-      <?if $(var.Platform) = x64 ?>
-      <Directory Id="System64Folder" />
-      <?endif?>
-      <Directory Id="SystemFolder" />
-    </Directory>
-
-    <?if $(var.Platform) = x64 ?>
-    <DirectoryRef  Id="System64Folder">
+    <?if $(var.Plat) != x86 ?>
+    <StandardDirectory Id="System64Folder">
       <Component Id="OpenPGPCSP64" Guid="4B6C0466-AFF7-4043-A605-C103060AE683" >
-        <File Id="OpenPGPCSP64dll" Name="OpenPGPCSP.dll" Source="$(var.SourceDir)\OpenPGPCSP64.dll" KeyPath="yes" DiskId="1" SelfRegCost="1"/>
+        <File Id="OpenPGPCSP64dll" Name="OpenPGPCSP.dll" Source="$(var.SourceDir)\$(var.NativeDll)" KeyPath="yes" SelfRegCost="1"/>
         <RegistryKey Root="HKLM" Key="SOFTWARE\Microsoft\Cryptography\Defaults\Provider\OpenPGP CSP">
           <RegistryValue Type="string" Name="Image Path" Value="OpenPGPCSP.dll"/>
           <RegistryValue Type="integer" Name="Type" Value="1"/>
@@ -70,13 +51,13 @@
           <RegistryValue Type="string" Name="Smart Card Key Storage Provider" Value="OpenPGP KSP"/>
         </RegistryKey>
       </Component>
-    </DirectoryRef>
+    </StandardDirectory>
     <?endif?>
     
-    <DirectoryRef  Id="SystemFolder">
-      <Component Id="OpenPGPCSP32" Guid="8DCB958E-E86F-43F5-A17F-A12C00A707C7" Win64="no">
-        <File Id="OpenPGPCSP32dll" Name="OpenPGPCSP.dll" Source="$(var.SourceDirAlwaysX86)\OpenPGPCSP32.dll" KeyPath="yes" DiskId="1" SelfRegCost="1"/>
-        <?if $(var.Platform) = x64 ?>
+    <StandardDirectory Id="SystemFolder">
+      <Component Id="OpenPGPCSP32" Guid="8DCB958E-E86F-43F5-A17F-A12C00A707C7" Bitness="always32">
+        <File Id="OpenPGPCSP32dll" Name="OpenPGPCSP.dll" Source="$(var.SourceDirAlwaysX86)\OpenPGPCSP32.dll" KeyPath="yes" SelfRegCost="1"/>
+        <?if $(var.Plat) != x86 ?>
         <RegistryKey Root="HKLM" Key="SOFTWARE\Wow6432Node\Microsoft\Cryptography\Defaults\Provider\OpenPGP CSP">
           <RegistryValue Type="string" Name="Image Path" Value="OpenPGPCSP.dll"/>
           <RegistryValue Type="integer" Name="Type" Value="1"/>
@@ -89,7 +70,7 @@
           <RegistryValue Type="integer" Name="SigInFile" Value="0"/>
         </RegistryKey>
         <?endif?>
-        <?if $(var.Platform) = x64 ?>
+        <?if $(var.Plat) != x86 ?>
         <RegistryKey Root="HKLM" Key="SOFTWARE\Wow6432Node\Microsoft\Cryptography\Calais\SmartCards\OpenPGP Card v2 (via OpenPGP CSP)">
           <RegistryValue Type="binary" Name="ATR" Value="3BDA18FF81B1FE751F030031C573C001400090000C"/>
           <RegistryValue Type="binary" Name="ATRMask" Value="FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"/>
@@ -105,7 +86,7 @@
         </RegistryKey>
         <?endif?>
         
-        <?if $(var.Platform) = x64 ?>
+        <?if $(var.Plat) != x86 ?>
         <RegistryKey Root="HKLM" Key="SOFTWARE\Wow6432Node\Microsoft\Cryptography\Calais\SmartCards\OpenPGP Card v3 (via OpenPGP CSP)">
           <RegistryValue Type="binary" Name="ATR" Value="3bda18ff81b1fe751f030031f573c001600090001c"/>
           <RegistryValue Type="binary" Name="ATRMask" Value="FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"/>
@@ -121,40 +102,38 @@
         </RegistryKey>
         <?endif?>
       </Component>
-    </DirectoryRef>
+    </StandardDirectory>
 
-    <?if $(var.Platform) = x64 ?>
-    <DirectoryRef  Id="System64Folder">
+    <?if $(var.Plat) != x86 ?>
+    <StandardDirectory Id="System64Folder">
       <Component Id="OpenPGPSmartCardManager" Guid="8F9AF825-70CC-41D9-B7E4-7634F3BF06E3">
-        <File Id="OpenPGPSmartCardManagerexe" Name="OpenPGPSmartCardManager.exe" Source="$(var.SourceDir)\OpenPGPSmartCardManager.exe" KeyPath="yes" DiskId="1" />
+        <File Id="OpenPGPSmartCardManagerexe" Name="OpenPGPSmartCardManager.exe" Source="$(var.SourceDir)\OpenPGPSmartCardManager.exe" KeyPath="yes" />
       </Component>
-    </DirectoryRef>
+    </StandardDirectory>
     <?else?>
-    <DirectoryRef  Id="SystemFolder">
+    <StandardDirectory Id="SystemFolder">
       <Component Id="OpenPGPSmartCardManager" Guid="8F9AF825-70CC-41D9-B7E4-7634F3BF06E3">
-        <File Id="OpenPGPSmartCardManagerexe" Name="OpenPGPSmartCardManager.exe" Source="$(var.SourceDir)\OpenPGPSmartCardManager.exe" KeyPath="yes" DiskId="1" />
+        <File Id="OpenPGPSmartCardManagerexe" Name="OpenPGPSmartCardManager.exe" Source="$(var.SourceDir)\OpenPGPSmartCardManager.exe" KeyPath="yes" />
       </Component>
-    </DirectoryRef>
+    </StandardDirectory>
     <?endif?>
 
     <Feature Id="DefaultFeature" Level="1" Description="This feature contains all the drivers and the programs"
-             Title="NFC minidriver" Absent="disallow" TypicalDefault="install" Display="expand">
+             Title="NFC minidriver" AllowAbsent="no" Display="expand">
       <Feature Id="OpenPGPCSP" Level="1" Title="minidriver files"
                Description="This feature is the core of the product"
-                TypicalDefault="install">
+               >
         <ComponentRef Id="OpenPGPCSP32" />
-        <?if $(var.Platform) = x64 ?>
+        <?if $(var.Plat) != x86 ?>
         <ComponentRef Id="OpenPGPCSP64" />
         <?endif?>
       </Feature>
-      <Feature Id="OpenPGPSmartCardManager" Level="1" Title="OpenPGPSmartCardManager" TypicalDefault="install">
+      <Feature Id="OpenPGPSmartCardManager" Level="1" Title="OpenPGPSmartCardManager">
         <ComponentRef Id="OpenPGPSmartCardManager"/>
       </Feature>
     </Feature>
 
-    <UI>
-      <UIRef Id="WixUI_Minimal" />
-    </UI>
-    <Media Id="1" Cabinet="OpenPGPCSP.cab" EmbedCab="yes" />
-  </Product>
+    <ui:WixUI Id="WixUI_Minimal" />
+    <MediaTemplate EmbedCab="yes" />
+  </Package>
 </Wix>
